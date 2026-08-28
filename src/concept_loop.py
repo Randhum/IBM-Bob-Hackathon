@@ -24,33 +24,50 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-ContextGoalPair = Tuple[str, str]  # (context, goal)
+# (context, goal, optional seed_phrase, optional grammatical_frame)
+ContextGoalPair = Tuple[str, str]
+ContextGoalPairFull = Tuple[str, str, str, str]  # (context, goal, seed_phrase, grammatical_frame)
 
 
 def _build_generation_prompt(
     term: str,
     context: str,
     goal: str,
+    seed_phrase: str = "",
+    grammatical_frame: str = "",
     hint: Optional[str] = None,
 ) -> str:
-    """Build the initial simulation generation prompt (rl-feedback-loop SKILL Step 2)."""
+    """Build the initial simulation generation prompt (rl-feedback-loop SKILL Step 2).
+
+    seed_phrase and grammatical_frame are injected into the prompt so the LLM
+    constructs a simulation for the specific grammatical construction, not the
+    ambiguous bare token (docs/concept-ontology.md §3).
+    """
     lines = [
         "You are a concept-simulation engine based on predictive cognition.\n",
         f'Concept: "{term}"',
+    ]
+    if seed_phrase:
+        lines.append(f'Seed phrase (grammatically framed): "{seed_phrase}"')
+    if grammatical_frame:
+        lines.append(f'Grammatical frame: "{grammatical_frame}"')
+    lines += [
         f'Context: "{context}"',
         f'Goal: "{goal}"\n',
         "Generate a simulation — a prediction of the likely experience, response, or behavior that",
-        "this concept would produce in this context to serve this goal.",
+        "this concept, as grammatically framed here, would produce in this context to serve this goal.",
     ]
     if hint:
         lines.append(f'Incorporate this guidance: "{hint}"')
-    lines.append("\nBe specific and grounded. 1–3 sentences.")
+    lines.append("\nBe specific and grounded. 1–3 sentences. ≤60 words.")
     return "\n".join(lines)
 
 
 def run_rl_loop(
     term: str,
     context_goal_pairs: List[ContextGoalPair],
+    seed_phrase: str = "",
+    grammatical_frame: str = "",
     max_iterations: int = 3,
     threshold: float = 7.5,
     hint: Optional[str] = None,
@@ -65,7 +82,10 @@ def run_rl_loop(
 
     Parameters
     ----------
-    term:               Concept term to build a population for.
+    term:               Concept term (raw word/phrase).
+    seed_phrase:        Grammatically framed form, e.g. "to fire (someone)".
+                        Injected into all prompts to prevent tokenization collapse.
+    grammatical_frame:  Syntactic role, e.g. "transitive verb, agent=manager, patient=employee".
     context_goal_pairs: List of (context, goal) tuples to process.
     max_iterations:     Maximum refinement rounds per instance (default: 3).
     threshold:          Adequacy score above which refinement stops (default: 7.5).
@@ -75,13 +95,18 @@ def run_rl_loop(
     -------
     ConceptPopulation with all processed instances.
     """
-    population = ConceptPopulation(term=term)
+    population = ConceptPopulation(term=term, seed_phrase=seed_phrase)
 
     for context, goal in context_goal_pairs:
         logger.info("RL loop — term=%r context=%r goal=%r", term, context[:40], goal[:40])
 
         # ── Step 2: Generate initial simulation (Round 0) ──────────────────
-        gen_prompt = _build_generation_prompt(term, context, goal, hint=hint)
+        gen_prompt = _build_generation_prompt(
+            term, context, goal,
+            seed_phrase=seed_phrase,
+            grammatical_frame=grammatical_frame,
+            hint=hint,
+        )
         gen_result = call_watsonx(gen_prompt, call_type="generate")
         simulation = (gen_result.get("response") or "").strip()
 
@@ -93,13 +118,19 @@ def run_rl_loop(
             context=context,
             goal=goal,
             simulation=simulation,
+            seed_phrase=seed_phrase,
+            grammatical_frame=grammatical_frame,
             round=0,
         )
 
         # ── Step 3: Score for functional adequacy ──────────────────────────
-        score = judge_module.score_instance(term, context, goal, simulation)
+        score = judge_module.score_instance(
+            term, context, goal, simulation,
+            seed_phrase=seed_phrase,
+            grammatical_frame=grammatical_frame,
+        )
         instance.adequacy_score = score
-        instance.record_round()  # capture Round 0 in history
+        instance.record_round()  # capture Round 0 in history (initial_score property reads [0])
 
         logger.info("  Round 0 score: %s", score)
 
@@ -125,6 +156,8 @@ def run_rl_loop(
                 context=context,
                 goal=goal,
                 current_simulation=instance.simulation,
+                seed_phrase=seed_phrase,
+                grammatical_frame=grammatical_frame,
                 score=instance.adequacy_score,
                 hint=hint,
             )
@@ -134,7 +167,11 @@ def run_rl_loop(
                 instance.hint = hint
 
             # Re-score
-            score = judge_module.score_instance(term, context, goal, instance.simulation)
+            score = judge_module.score_instance(
+                term, context, goal, instance.simulation,
+                seed_phrase=seed_phrase,
+                grammatical_frame=grammatical_frame,
+            )
             instance.adequacy_score = score
             instance.record_round()  # capture this round in history
 

@@ -69,6 +69,7 @@ def _compute_metrics(population: ConceptPopulation) -> Dict[str, Any]:
         "population_breadth": population.population_breadth,
         "goal_coverage": len(population.goal_coverage),
         "context_coverage": len(population.context_coverage),
+        "grammatical_frame_coverage": len(population.grammatical_frames),
         "mean_initial_score": mean_initial,
         "mean_final_score": mean_final,
         "mean_delta": mean_delta,
@@ -106,10 +107,11 @@ def _build_report(population: ConceptPopulation, metrics: Dict[str, Any]) -> str
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # ── Header ────────────────────────────────────────────────────────────
+    seed_line = f"  \n**Seed Phrase:** {population.seed_phrase}" if population.seed_phrase else ""
     lines = [
         "# Concept Population Report",
         "",
-        f"**Concept:** {population.term}  ",
+        f"**Concept:** {population.term}{seed_line}  ",
         f"**Generated:** {now}",
         "",
         "---",
@@ -121,6 +123,7 @@ def _build_report(population: ConceptPopulation, metrics: Dict[str, Any]) -> str
         f"| Population Breadth | {metrics['population_breadth']} instances |",
         f"| Goal Coverage | {metrics['goal_coverage']} distinct goals |",
         f"| Context Coverage | {metrics['context_coverage']} distinct contexts |",
+        f"| Grammatical Frame Coverage | {metrics['grammatical_frame_coverage']} distinct frames |",
         f"| Mean Adequacy Score (Initial) | {metrics['mean_initial_score'] or 'N/A'}/10 |",
         f"| Mean Adequacy Score (Final) | {metrics['mean_final_score'] or 'N/A'}/10 |",
         f"| Mean Score Delta | {metrics['mean_delta'] or 'N/A'} |",
@@ -132,28 +135,30 @@ def _build_report(population: ConceptPopulation, metrics: Dict[str, Any]) -> str
         "## Theoretical Note",
         "",
         "> A concept, following Barrett's constructionist model, is not a single definition but a",
-        "> *population of goal-indexed contextual instances* — predictions about what this concept",
-        "> produces in specific situations to serve specific goals. The table below shows this population.",
+        "> *population of goal-indexed, grammatically-grounded contextual instances* — predictions",
+        "> about what this concept, in its specific grammatical construction, produces in particular",
+        "> situations to serve specific goals. The table below shows this population.",
         "",
         "---",
         "",
         "## Instance Population Table",
         "",
-        "| Context | Goal | Final Simulation | Round | Adequacy | Human Signal |",
-        "|---|---|---|---|---|---|",
+        "| Context | Goal | Gram. Frame | Final Simulation | Round | Adequacy | Human Signal |",
+        "|---|---|---|---|---|---|---|",
     ]
 
     for inst in population.instances:
         score_str = f"{inst.adequacy_score:.1f}/10" if inst.adequacy_score is not None else "N/A"
         sig = inst.human_signal or "—"
         # Truncate long simulation text for table readability
-        sim_display = inst.simulation[:120].replace("|", "\\|")
-        if len(inst.simulation) > 120:
+        sim_display = inst.simulation[:100].replace("|", "\\|")
+        if len(inst.simulation) > 100:
             sim_display += "…"
-        ctx_display = inst.context[:60].replace("|", "\\|")
-        goal_display = inst.goal[:60].replace("|", "\\|")
+        ctx_display = inst.context[:50].replace("|", "\\|")
+        goal_display = inst.goal[:50].replace("|", "\\|")
+        frame_display = (inst.grammatical_frame[:30].replace("|", "\\|") if inst.grammatical_frame else "—")
         lines.append(
-            f"| {ctx_display} | {goal_display} | {sim_display} | {inst.round} | {score_str} | {sig} |"
+            f"| {ctx_display} | {goal_display} | {frame_display} | {sim_display} | {inst.round} | {score_str} | {sig} |"
         )
 
     # ── Score delta table ─────────────────────────────────────────────────
@@ -234,12 +239,14 @@ def generate_report(
         fh.write(report_md)
 
     # Console summary (concept-clarity-report SKILL Step 4)
+    seed_display = f" ({population.seed_phrase})" if population.seed_phrase else ""
     print(
         f"\n✅ Concept Population Report saved to {output_path}\n"
-        f"   Concept: {population.term}\n"
+        f"   Concept: {population.term}{seed_display}\n"
         f"   Population breadth: {metrics['population_breadth']} instances\n"
         f"   Goal coverage: {metrics['goal_coverage']} | "
-        f"Context coverage: {metrics['context_coverage']}\n"
+        f"Context coverage: {metrics['context_coverage']} | "
+        f"Grammatical frames: {metrics['grammatical_frame_coverage']}\n"
         f"   Mean adequacy: {metrics['mean_initial_score']} → {metrics['mean_final_score']} "
         f"({metrics['mean_improvement_pct']}% improvement)\n"
     )

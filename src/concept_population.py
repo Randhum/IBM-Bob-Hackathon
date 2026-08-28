@@ -3,6 +3,13 @@ concept_population.py — Barrett-aligned data model for the concept-learning wo
 
 A concept is represented as a *population of variable instances*, each indexed by a
 context and a goal — not a single fixed definition (Barrett, 2017).
+
+Key addition (tokenization layer):
+  seed_phrase      — the grammatically framed input form, e.g. "to fire (someone)".
+                     Never a bare token. Minimum concept-construction unit.
+  grammatical_frame — the syntactic role, e.g. "transitive verb, agent=manager, patient=employee".
+                     Same word + different frame = potentially different concept (see
+                     docs/concept-ontology.md §3 — The Vocabulary / Tokenization Layer).
 """
 
 from __future__ import annotations
@@ -18,12 +25,15 @@ class ConceptInstance:
     """A single contextual simulation within a concept population.
 
     Corresponds to one (context, goal) pair and the simulation produced for it,
-    along with scoring and human-feedback metadata.
+    along with grammatical framing, scoring, and human-feedback metadata.
     """
 
     context: str
     goal: str
     simulation: str
+    # Tokenization / grammar layer — prevents the token-collapse problem
+    seed_phrase: str = ""          # grammatically framed seed, e.g. "to fire (someone)"
+    grammatical_frame: str = ""    # syntactic role, e.g. "transitive verb, agent=X, patient=Y"
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     adequacy_score: Optional[float] = None
     human_signal: Optional[str] = None   # "accept" | "reject" | "refine" | None
@@ -66,6 +76,8 @@ class ConceptInstance:
             context=data["context"],
             goal=data["goal"],
             simulation=data["simulation"],
+            seed_phrase=data.get("seed_phrase", ""),
+            grammatical_frame=data.get("grammatical_frame", ""),
             adequacy_score=data.get("adequacy_score"),
             human_signal=data.get("human_signal"),
             hint=data.get("hint"),
@@ -80,12 +92,18 @@ class ConceptPopulation:
 
     The population GROWS through RL iterations — instances are never replaced,
     only added and refined.
+
+    grammatical_frames tracks all distinct syntactic constructions represented in
+    the population. Same word, different frame = potentially different concept.
+    See docs/concept-ontology.md §3.
     """
 
     term: str
+    seed_phrase: str = ""                  # canonical grammatically framed form for this population
     instances: List[ConceptInstance] = field(default_factory=list)
     goal_coverage: List[str] = field(default_factory=list)
     context_coverage: List[str] = field(default_factory=list)
+    grammatical_frames: List[str] = field(default_factory=list)
     population_breadth: int = 0
 
     def add_instance(self, instance: ConceptInstance) -> None:
@@ -95,14 +113,18 @@ class ConceptPopulation:
             self.goal_coverage.append(instance.goal)
         if instance.context not in self.context_coverage:
             self.context_coverage.append(instance.context)
+        if instance.grammatical_frame and instance.grammatical_frame not in self.grammatical_frames:
+            self.grammatical_frames.append(instance.grammatical_frame)
         self.population_breadth = len(self.instances)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "term": self.term,
+            "seed_phrase": self.seed_phrase,
             "instances": [i.to_dict() for i in self.instances],
             "goal_coverage": self.goal_coverage,
             "context_coverage": self.context_coverage,
+            "grammatical_frames": self.grammatical_frames,
             "population_breadth": self.population_breadth,
         }
 
@@ -111,10 +133,11 @@ class ConceptPopulation:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ConceptPopulation":
-        pop = cls(term=data["term"])
+        pop = cls(term=data["term"], seed_phrase=data.get("seed_phrase", ""))
         pop.instances = [ConceptInstance.from_dict(i) for i in data.get("instances", [])]
         pop.goal_coverage = data.get("goal_coverage", [])
         pop.context_coverage = data.get("context_coverage", [])
+        pop.grammatical_frames = data.get("grammatical_frames", [])
         pop.population_breadth = data.get("population_breadth", len(pop.instances))
         return pop
 

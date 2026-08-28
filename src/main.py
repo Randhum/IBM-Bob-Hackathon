@@ -46,7 +46,22 @@ def _parse_args(argv: List[str] | None = None) -> argparse.Namespace:
         prog="src.main",
         description="Concept-learning workflow (Barrett population model + watsonx.ai)",
     )
-    parser.add_argument("--term", required=True, help="Concept term to build a population for.")
+    parser.add_argument("--term", required=True, help="Concept term (raw word/phrase, e.g. 'fire').")
+    parser.add_argument(
+        "--seed-phrase", default="", metavar="PHRASE",
+        help=(
+            "Grammatically framed form of the term, e.g. 'to fire (someone)'. "
+            "Prevents tokenization collapse — same word, different frame = different concept. "
+            "See docs/concept-ontology.md §3."
+        ),
+    )
+    parser.add_argument(
+        "--grammatical-frame", default="", metavar="FRAME",
+        help=(
+            "Syntactic role, e.g. 'transitive verb, agent=manager, patient=employee'. "
+            "Injected into all LLM prompts to anchor concept construction."
+        ),
+    )
 
     # Input: either a contexts-file or inline context+goal
     input_group = parser.add_mutually_exclusive_group(required=True)
@@ -108,18 +123,25 @@ def main(argv: List[str] | None = None) -> None:
     args = _parse_args(argv)
     context_goal_pairs = _load_context_goal_pairs(args)
 
+    seed_phrase = args.seed_phrase or ""
+    grammatical_frame = args.grammatical_frame or ""
+
     print(
         f"\n🚀 Starting concept-learning workflow\n"
-        f"   Term: {args.term}\n"
-        f"   Pairs: {len(context_goal_pairs)}\n"
-        f"   Max iterations: {args.max_iterations} | Threshold: {args.threshold}\n"
-        f"   Stub mode: {os.getenv('WATSONX_STUB', 'false')}\n"
+        f"   Term:             {args.term}\n"
+        f"   Seed phrase:      {seed_phrase or '(not set)'}\n"
+        f"   Grammatical frame:{grammatical_frame or '(not set)'}\n"
+        f"   Pairs:            {len(context_goal_pairs)}\n"
+        f"   Max iterations:   {args.max_iterations} | Threshold: {args.threshold}\n"
+        f"   Stub mode:        {os.getenv('WATSONX_STUB', 'false')}\n"
     )
 
     # ── Step 1: RL loop ────────────────────────────────────────────────────
     population = run_rl_loop(
         term=args.term,
         context_goal_pairs=context_goal_pairs,
+        seed_phrase=seed_phrase,
+        grammatical_frame=grammatical_frame,
         max_iterations=args.max_iterations,
         threshold=args.threshold,
         hint=args.hint,
@@ -137,7 +159,8 @@ def main(argv: List[str] | None = None) -> None:
     # ── Step 3: Save population JSON ───────────────────────────────────────
     docs_dir = Path(args.output).parent
     docs_dir.mkdir(parents=True, exist_ok=True)
-    json_path = docs_dir / f"{args.term}_population.json"
+    safe_term = args.term.replace(" ", "_").replace("/", "-")
+    json_path = docs_dir / f"{safe_term}_population.json"
     with open(json_path, "w", encoding="utf-8") as fh:
         fh.write(population.to_json())
     print(f"\n💾 ConceptPopulation saved to {json_path}")

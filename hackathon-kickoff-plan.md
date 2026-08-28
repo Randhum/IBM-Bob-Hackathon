@@ -56,31 +56,46 @@ population representation (JSON) + scoring heuristics (functional adequacy per c
 
 ---
 
-## Core Data Model (Barrett-aligned)
+## Core Data Model (Barrett-aligned + Tokenization layer)
 
 ```
+ConceptInstance {
+  id: str,
+  seed_phrase: str,            # grammatically framed seed, e.g. "to fire (someone)"
+  grammatical_frame: str,      # e.g. "transitive verb, agent=manager, patient=employee"
+  context: str,                # specific situational frame (full sentence minimum)
+  goal: str,                   # functional purpose being served
+  simulation: str,             # predicted experience/behavior/response (≤60 words)
+  adequacy_score: float (0-10),
+  initial_score: float,        # score at round 0, for delta computation
+  human_signal: accept|reject|refine,
+  hint: str|null,
+  round: int,
+  timestamp: str
+}
+
 ConceptPopulation {
-  term: str                          # e.g. "anger"
-  instances: [
-    {
-      id: str,
-      context: str,                  # e.g. "receiving unfair criticism at work"
-      goal: str,                     # e.g. "restore social fairness"
-      simulation: str,               # the predicted experience/response
-      adequacy_score: float (0-10),  # how well this instance serves the goal in context
-      human_signal: accept|reject|refine,
-      hint: str|null,
-      round: int
-    }
-  ]
-  goal_coverage: [str]               # list of distinct goals covered
-  context_coverage: [str]            # list of distinct contexts covered
+  term: str                          # e.g. "anger" / "fire"
+  seed_phrase: str                   # grammatically framed: "to fire (someone)"
+  instances: [ConceptInstance]
+  goal_coverage: [str]               # distinct goals across accepted instances
+  context_coverage: [str]            # distinct contexts across accepted instances
+  grammatical_frames: [str]          # distinct grammatical constructions covered
   population_breadth: int            # count of distinct accepted instances
 }
 ```
 
-The RL loop **adds and refines instances** in this population. It does not replace one definition
-with another — it grows and diversifies the population while improving per-instance adequacy.
+**Key addition: `grammatical_frame` and `seed_phrase`** — these fields prevent the
+tokenization collapse. The word `"fire"` as a noun (combustion) vs transitive verb
+(dismiss) vs metaphor (inspire) must each be treated as potentially separate concept
+constructions, not as instances of the same concept. Grammar disambiguates where
+the token cannot.
+
+The RL loop **adds and refines instances** in this population. It does not replace one
+instance with another — it grows and diversifies the population across grammatical frames,
+contexts, and goals.
+
+See `docs/concept-ontology.md` for full theoretical grounding and vocabulary rules.
 
 ---
 

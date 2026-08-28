@@ -30,6 +30,8 @@ def refine_simulation(
     context: str,
     goal: str,
     current_simulation: str,
+    seed_phrase: str = "",
+    grammatical_frame: str = "",
     score: Optional[float] = None,
     hint: Optional[str] = None,
     aspect: str = "goal-alignment",
@@ -38,10 +40,13 @@ def refine_simulation(
 
     Parameters
     ----------
-    term:               Concept term (e.g. "anger").
+    term:               Concept term (e.g. "anger", "fire").
     context:            Situational context for this instance.
     goal:               Functional goal this concept should serve.
     current_simulation: Simulation text to improve.
+    seed_phrase:        Grammatically framed seed — keeps the refiner anchored to the
+                        correct grammatical construction (docs/concept-ontology.md §3).
+    grammatical_frame:  Syntactic role — same purpose as seed_phrase.
     score:              Current adequacy score (optional, improves prompt calibration).
     hint:               Human-supplied correction direction (optional).
     aspect:             Focus of improvement: "goal-alignment" | "specificity" |
@@ -55,6 +60,12 @@ def refine_simulation(
         lines = [
             "You are a concept-simulation refiner grounded in predictive cognition.\n",
             f'Concept: "{term}"',
+        ]
+        if seed_phrase:
+            lines.append(f'Seed phrase: "{seed_phrase}"')
+        if grammatical_frame:
+            lines.append(f'Grammatical frame: "{grammatical_frame}"')
+        lines += [
             f'Context: "{context}"',
             f'Goal: "{goal}"',
             f'Current simulation: "{simulation}"',
@@ -66,7 +77,7 @@ def refine_simulation(
         lines.append(f"Improvement focus: {aspect}")
         lines.append(
             "\nProduce one improved simulation that better predicts the experience/behavior "
-            "this concept produces in this context to serve this goal.\n"
+            "this concept, as grammatically framed, produces in this context to serve this goal.\n"
             "Then on a new line write:\n"
             "RATIONALE: <one sentence explaining what was improved and why>"
         )
