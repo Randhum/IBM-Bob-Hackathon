@@ -1,0 +1,39 @@
+{
+  "term": "anger",
+  "instances": [
+    {
+      "context": "receiving unfair criticism at work",
+      "goal": "restore social fairness",
+      "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+      "id": "7b7d6faa-50b3-4270-b0c5-e022e18b9c57",
+      "adequacy_score": 5.33,
+      "human_signal": null,
+      "hint": null,
+      "round": 2,
+      "history": [
+        {
+          "round": 0,
+          "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+          "adequacy_score": 5.08
+        },
+        {
+          "round": 1,
+          "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+          "adequacy_score": 6.62
+        },
+        {
+          "round": 2,
+          "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+          "adequacy_score": 5.33
+        }
+      ]
+    }
+  ],
+  "goal_coverage": [
+    "restore social fairness"
+  ],
+  "context_coverage": [
+    "receiving unfair criticism at work"
+  ],
+  "population_breadth": 1
+}

@@ -1,0 +1,123 @@
+"""
+concept_population.py — Barrett-aligned data model for the concept-learning workflow.
+
+A concept is represented as a *population of variable instances*, each indexed by a
+context and a goal — not a single fixed definition (Barrett, 2017).
+"""
+
+from __future__ import annotations
+
+import json
+import uuid
+from dataclasses import dataclass, field, asdict
+from typing import List, Optional, Dict, Any
+
+
+@dataclass
+class ConceptInstance:
+    """A single contextual simulation within a concept population.
+
+    Corresponds to one (context, goal) pair and the simulation produced for it,
+    along with scoring and human-feedback metadata.
+    """
+
+    context: str
+    goal: str
+    simulation: str
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    adequacy_score: Optional[float] = None
+    human_signal: Optional[str] = None   # "accept" | "reject" | "refine" | None
+    hint: Optional[str] = None
+    round: int = 0
+    # history tracks each round's simulation + score for score-delta reporting
+    history: List[Dict[str, Any]] = field(default_factory=list)
+
+    def record_round(self) -> None:
+        """Append the current (round, simulation, adequacy_score) to history."""
+        self.history.append({
+            "round": self.round,
+            "simulation": self.simulation,
+            "adequacy_score": self.adequacy_score,
+        })
+
+    @property
+    def initial_score(self) -> Optional[float]:
+        """Score at round 0 (first history entry)."""
+        if self.history:
+            return self.history[0].get("adequacy_score")
+        return None
+
+    @property
+    def score_delta(self) -> Optional[float]:
+        """Final score minus initial score. None if either is unavailable."""
+        initial = self.initial_score
+        final = self.adequacy_score
+        if initial is not None and final is not None:
+            return round(final - initial, 2)
+        return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ConceptInstance":
+        return cls(
+            id=data.get("id", str(uuid.uuid4())),
+            context=data["context"],
+            goal=data["goal"],
+            simulation=data["simulation"],
+            adequacy_score=data.get("adequacy_score"),
+            human_signal=data.get("human_signal"),
+            hint=data.get("hint"),
+            round=data.get("round", 0),
+            history=data.get("history", []),
+        )
+
+
+@dataclass
+class ConceptPopulation:
+    """A Barrett-aligned population of contextual instances for a single concept term.
+
+    The population GROWS through RL iterations — instances are never replaced,
+    only added and refined.
+    """
+
+    term: str
+    instances: List[ConceptInstance] = field(default_factory=list)
+    goal_coverage: List[str] = field(default_factory=list)
+    context_coverage: List[str] = field(default_factory=list)
+    population_breadth: int = 0
+
+    def add_instance(self, instance: ConceptInstance) -> None:
+        """Add an instance and update coverage metadata."""
+        self.instances.append(instance)
+        if instance.goal not in self.goal_coverage:
+            self.goal_coverage.append(instance.goal)
+        if instance.context not in self.context_coverage:
+            self.context_coverage.append(instance.context)
+        self.population_breadth = len(self.instances)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "term": self.term,
+            "instances": [i.to_dict() for i in self.instances],
+            "goal_coverage": self.goal_coverage,
+            "context_coverage": self.context_coverage,
+            "population_breadth": self.population_breadth,
+        }
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ConceptPopulation":
+        pop = cls(term=data["term"])
+        pop.instances = [ConceptInstance.from_dict(i) for i in data.get("instances", [])]
+        pop.goal_coverage = data.get("goal_coverage", [])
+        pop.context_coverage = data.get("context_coverage", [])
+        pop.population_breadth = data.get("population_breadth", len(pop.instances))
+        return pop
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "ConceptPopulation":
+        return cls.from_dict(json.loads(json_str))
