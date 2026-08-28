@@ -268,6 +268,14 @@ A concept is complete when it has adequate coverage across the supplied (context
 
 ---
 
+### Sub-Task 6 — Bob Session Screenshots
+
+**Intent:** Capture and commit required Bob task session summary screenshots.
+
+**Status:** [x] done — `assets/screenshots/README.md` created with instructions for 4 screenshots. Actual screenshot PNG files require manual capture by the team during the recording session.
+
+---
+
 ### Sub-Task 7 — Video Demo Production
 
 **Intent:** Record the ≤3-minute demo video meeting all judge requirements.

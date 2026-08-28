@@ -5,35 +5,68 @@
       "context": "receiving unfair criticism at work",
       "goal": "restore social fairness",
       "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
-      "id": "7b7d6faa-50b3-4270-b0c5-e022e18b9c57",
-      "adequacy_score": 5.33,
+      "id": "58a20f36-2e86-4d06-8d53-30d25bb15cd2",
+      "adequacy_score": 7.69,
       "human_signal": null,
       "hint": null,
-      "round": 2,
+      "round": 0,
       "history": [
         {
           "round": 0,
           "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
-          "adequacy_score": 5.08
+          "adequacy_score": 7.69
+        }
+      ]
+    },
+    {
+      "context": "being ignored in a group conversation",
+      "goal": "be heard and acknowledged",
+      "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+      "id": "4517f639-3fca-4676-b6c2-d188805b6238",
+      "adequacy_score": 8.95,
+      "human_signal": null,
+      "hint": null,
+      "round": 1,
+      "history": [
+        {
+          "round": 0,
+          "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+          "adequacy_score": 7.17
         },
         {
           "round": 1,
           "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
-          "adequacy_score": 6.62
-        },
+          "adequacy_score": 8.95
+        }
+      ]
+    },
+    {
+      "context": "witnessing injustice toward a stranger",
+      "goal": "uphold fairness",
+      "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
+      "id": "708f3fb6-6bf5-4102-8068-06e401149067",
+      "adequacy_score": 8.84,
+      "human_signal": null,
+      "hint": null,
+      "round": 0,
+      "history": [
         {
-          "round": 2,
+          "round": 0,
           "simulation": "Stub simulation for 'anger': a placeholder concept instance used in dry-run mode.",
-          "adequacy_score": 5.33
+          "adequacy_score": 8.84
         }
       ]
     }
   ],
   "goal_coverage": [
-    "restore social fairness"
+    "restore social fairness",
+    "be heard and acknowledged",
+    "uphold fairness"
   ],
   "context_coverage": [
-    "receiving unfair criticism at work"
+    "receiving unfair criticism at work",
+    "being ignored in a group conversation",
+    "witnessing injustice toward a stranger"
   ],
-  "population_breadth": 1
+  "population_breadth": 3
 }
