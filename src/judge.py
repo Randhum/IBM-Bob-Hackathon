@@ -3,12 +3,16 @@ judge.py — Functional adequacy scorer for concept instances.
 
 Scores a simulation on how well it predicts the experience/behavior a concept
 produces in a given context toward a given goal (Barrett's functional adequacy).
+
+All linguistic layers (Levels 0–4 per docs/concept-ontology.md §3.4) are injected
+into the judge prompt when provided, so the LLM evaluates the simulation against the
+correct grammatical construction and sub-lexical grounding.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
@@ -26,6 +30,8 @@ def score_instance(
     simulation: str,
     seed_phrase: str = "",
     grammatical_frame: str = "",
+    morphemes: Optional[List[str]] = None,
+    phonesthetics_note: str = "",
 ) -> Optional[float]:
     """Score a concept simulation for functional adequacy.
 
@@ -35,18 +41,24 @@ def score_instance(
 
     Parameters
     ----------
-    term:             The concept being evaluated (e.g. "anger", "fire").
-    context:          The situational context for this instance.
-    goal:             The functional goal the concept is serving.
-    simulation:       The simulation text to score.
-    seed_phrase:      Grammatically framed seed (e.g. "to fire someone"). Optional.
-    grammatical_frame: Syntactic role (e.g. "transitive verb"). Optional.
+    term:              The concept being evaluated (e.g. "anger", "fire").
+    context:           The situational context for this instance.
+    goal:              The functional goal the concept is serving.
+    simulation:        The simulation text to score.
+    seed_phrase:       Grammatically framed seed. Level 4.
+    grammatical_frame: Syntactic role. Level 4.
+    morphemes:         Meaningful sub-word units. Level 2. Optional soft context.
+    phonesthetics_note: Sound-symbolism annotation. Level 0 signal. Optional.
 
     Returns
     -------
     Float 0–10 representing functional adequacy, or None if scoring failed.
     """
     lines = [f'Concept: "{term}"']
+    if morphemes:
+        lines.append(f'Morphemes: {", ".join(morphemes)}')
+    if phonesthetics_note:
+        lines.append(f'Sound symbolism: {phonesthetics_note}')
     if seed_phrase:
         lines.append(f'Seed phrase: "{seed_phrase}"')
     if grammatical_frame:

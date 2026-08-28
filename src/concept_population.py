@@ -4,12 +4,20 @@ concept_population.py — Barrett-aligned data model for the concept-learning wo
 A concept is represented as a *population of variable instances*, each indexed by a
 context and a goal — not a single fixed definition (Barrett, 2017).
 
-Key addition (tokenization layer):
-  seed_phrase      — the grammatically framed input form, e.g. "to fire (someone)".
-                     Never a bare token. Minimum concept-construction unit.
-  grammatical_frame — the syntactic role, e.g. "transitive verb, agent=manager, patient=employee".
-                     Same word + different frame = potentially different concept (see
-                     docs/concept-ontology.md §3 — The Vocabulary / Tokenization Layer).
+Five-level linguistic granularity (docs/concept-ontology.md §3.4):
+  Level 0  letter/phoneme  — substrate; phonesthetics_note is an optional signal here
+  Level 1  BPE token       — REJECTED; arbitrary, not meaningful
+  Level 2  morpheme        — optional annotation; carries bounded sub-lexical meaning
+  Level 3  word            — polysemous seed
+  Level 4  seed_phrase     — grammatically framed; minimum required input
+  Level 5  instance        — context + goal + simulation; primary output unit
+
+Key fields on ConceptInstance:
+  morphemes          — optional list of morphemes, e.g. ["mis-", "trust"]
+                       NOT BPE tokens. Meaningful sub-word units only.
+  phonesthetics_note — optional free-text sound-symbolism annotation
+  seed_phrase        — grammatically framed seed form (required, Level 4)
+  grammatical_frame  — syntactic role (required, Level 4)
 """
 
 from __future__ import annotations
@@ -24,14 +32,18 @@ from typing import List, Optional, Dict, Any
 class ConceptInstance:
     """A single contextual simulation within a concept population.
 
-    Corresponds to one (context, goal) pair and the simulation produced for it,
-    along with grammatical framing, scoring, and human-feedback metadata.
+    Corresponds to one (context, goal) pair and the simulation produced for it.
+    Levels 2–5 of the linguistic granularity model are represented as fields
+    (see docs/concept-ontology.md §3.4 and §4).
     """
 
     context: str
     goal: str
     simulation: str
-    # Tokenization / grammar layer — prevents the token-collapse problem
+    # Level 2 — Sub-lexical (optional; enriches prompts when provided)
+    morphemes: List[str] = field(default_factory=list)   # e.g. ["mis-", "trust"]
+    phonesthetics_note: str = ""                          # e.g. "sl- cluster: smooth unpleasantness"
+    # Level 4 — Grammatical construction (prevents tokenization collapse)
     seed_phrase: str = ""          # grammatically framed seed, e.g. "to fire (someone)"
     grammatical_frame: str = ""    # syntactic role, e.g. "transitive verb, agent=X, patient=Y"
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -76,6 +88,8 @@ class ConceptInstance:
             context=data["context"],
             goal=data["goal"],
             simulation=data["simulation"],
+            morphemes=data.get("morphemes", []),
+            phonesthetics_note=data.get("phonesthetics_note", ""),
             seed_phrase=data.get("seed_phrase", ""),
             grammatical_frame=data.get("grammatical_frame", ""),
             adequacy_score=data.get("adequacy_score"),

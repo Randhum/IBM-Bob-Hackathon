@@ -209,19 +209,77 @@ Our workflow operates at the **word + grammar** level. Concept construction requ
 
 ### 3.4 Vocabulary Granularity Levels
 
-Our system recognizes three levels at which language constructs concepts:
+Our system recognizes **five levels** at which language participates in concept construction.
+The critical distinction is between *arbitrary* sub-word fragments (BPE tokens) and
+*meaningful* sub-word units (morphemes):
 
 ```
-Level 1 — Token      "ang", "##er"         NO concept
-Level 2 — Word       "anger"               POTENTIAL concept seed (polysemous)
-Level 3 — Phrase     "anger at injustice"  CONCEPT FRAME (grammatically grounded)
-Level 4 — Instance   "anger at injustice   CONCEPT INSTANCE (fully specified)
-                      in context X
-                      toward goal Y"
+Level 0 — Letter / Phoneme
+          "f", "i", "r", "e"
+          Role: physical substrate only. No conceptual content.
+          Note: phonesthetics (sound symbolism) is a weak, optional signal at this level —
+          see §3.5. Letters themselves carry no concept.
+
+Level 1 — BPE Token (what LLMs actually use)
+          "fi", "##re" / "ang", "##er"
+          Role: NONE for concept construction. Arbitrary frequency-based split.
+          This is the tokenization failure: the split boundary is statistical, not meaningful.
+
+Level 2 — Morpheme (the right sub-word unit)
+          "mis-" + "trust" / "un-" + "employ" + "-ment" / "fire" (base morpheme)
+          Role: STRUCTURAL sub-lexical meaning.
+          Morphemes carry bounded semantic content: "mis-" signals wrongness/negation,
+          "-ment" signals nominalization, "-ing" signals ongoing aspect.
+          This is the level LLMs cannot represent — and the level we surface explicitly.
+
+Level 3 — Word (polysemous, not yet a concept)
+          "anger" / "fire" / "misunderstanding"
+          Role: POTENTIAL concept seed. Still ambiguous without grammar.
+
+Level 4 — Seed Phrase (grammatically framed word)
+          "anger at injustice" / "to fire (someone)" / "the fire burns"
+          Role: CONCEPT FRAME. Grammar disambiguates which concept is being constructed.
+
+Level 5 — Instance (fully specified)
+          seed phrase + context + goal
+          Role: CONCEPT INSTANCE. The only level at which a concept actually exists.
 ```
 
-Our workflow operates at **Level 3 → Level 4**. It explicitly rejects Level 1 and Level 2
-as insufficient for concept construction.
+**Where our workflow operates:** Level 2 → Level 5.
+- Level 2 (morphemes) is an optional input annotation, injected into prompts when provided.
+- Level 4 (seed phrase) is required — the minimum input unit.
+- Level 5 (instance) is the output — what the population is made of.
+- Level 1 (BPE tokens) is explicitly rejected. Level 0 (letters) is substrate, not content.
+
+**The key distinction that separates us from standard LLM pipelines:**
+Standard pipelines operate at Level 1 → Level 3 (token statistics over words).
+Our pipeline operates at Level 2 → Level 5 (morpheme-aware, grammar-grounded instances).
+
+### 3.5 Phonesthetics — Sound Symbolism as Optional Annotation
+
+> **Phonesthetics** is the study of non-arbitrary sound–meaning relationships — the tendency
+> for certain sound patterns to cluster around certain semantic fields.
+
+Examples:
+- English `"gl-"` words cluster around vision/light: *gleam, glitter, glow, glance, glare*
+- English `"sl-"` words cluster around unpleasant smooth movement: *slime, slide, slip, slither, slouch*
+- The `"-ump"` ending clusters around rounded heaviness: *bump, dump, lump, pump, stump*
+
+**Why it matters for concept construction:**
+Phonesthetics is evidence that even below the morpheme level, sound patterns carry *statistical*
+semantic associations — not arbitrary ones. Barrett's framework is compatible with this: the
+brain is a statistical prediction engine, and it would encode sound-meaning correlations if
+they have predictive value.
+
+**Why it is optional, not required:**
+- Phonesthetics is a tendency, not a rule. `"slim"` is `"sl-"` but is not unpleasant.
+- The associations are language-specific and culture-specific.
+- Forcing it as a required field would make the system brittle for terms with no phonesthetic
+  pattern.
+
+**In our system:** `phonesthetics_note` is a free-text optional annotation on `ConceptInstance`.
+It is injected into generation prompts as a soft hint when present — the LLM may use it to
+produce a richer, more resonant simulation, but it does not change the scoring logic.
 
 ---
 
@@ -230,37 +288,43 @@ as insufficient for concept construction.
 ```python
 @dataclass
 class ConceptInstance:
-    id: str                    # UUID — each instance is unique
-    # --- Grammatical / construction fields ---
-    seed_phrase: str           # grammatically framed seed, e.g. "to fire (someone)"
-    grammatical_frame: str     # e.g. "transitive verb, agent=manager, patient=employee"
-    # --- Barrett fields ---
-    context: str               # specific situational frame (full sentence minimum)
-    goal: str                  # functional purpose being served
-    simulation: str            # predicted experience/behavior/response (≤60 words)
+    id: str                       # UUID — each instance is unique
+    # --- Sub-lexical layer (Level 2) ---
+    morphemes: list[str]          # optional: meaningful sub-word units, e.g. ["mis-", "trust"]
+                                  # NOT BPE tokens — morphemes only (default: [])
+    phonesthetics_note: str       # optional: sound-symbolism annotation, e.g. "sl- cluster:
+                                  # smooth unpleasantness" (default: "", free text)
+    # --- Grammatical / construction layer (Level 4) ---
+    seed_phrase: str              # grammatically framed seed, e.g. "to fire (someone)"
+    grammatical_frame: str        # e.g. "transitive verb, agent=manager, patient=employee"
+    # --- Barrett instance layer (Level 5) ---
+    context: str                  # specific situational frame (full sentence minimum)
+    goal: str                     # functional purpose being served
+    simulation: str               # predicted experience/behavior/response (≤60 words)
     # --- Learning fields ---
-    adequacy_score: float      # 0-10, functional adequacy in this context/goal
-    initial_score: float       # score at round 0, for delta computation
-    human_signal: str          # "accept" | "reject" | "refine"
-    hint: str | None           # human correction hint if rejected/refined
-    round: int                 # which iteration produced this simulation
+    adequacy_score: float         # 0-10, functional adequacy in this context/goal
+    initial_score: float          # score at round 0, for delta computation (via history[0])
+    human_signal: str             # "accept" | "reject" | "refine"
+    hint: str | None              # human correction hint if rejected/refined
+    round: int                    # which iteration produced this simulation
     # --- Metadata ---
-    timestamp: str             # ISO 8601
+    timestamp: str                # ISO 8601
 
 @dataclass
 class ConceptPopulation:
-    term: str                  # the word/phrase being conceptualized
-    seed_phrase: str           # the grammatically framed seed form
+    term: str                     # the raw word/phrase
+    seed_phrase: str              # the grammatically framed seed form
     instances: list[ConceptInstance]
-    goal_coverage: list[str]   # distinct goals covered by accepted instances
-    context_coverage: list[str]# distinct contexts covered
+    goal_coverage: list[str]      # distinct goals covered by accepted instances
+    context_coverage: list[str]   # distinct contexts covered
     grammatical_frames: list[str] # distinct grammatical constructions covered
-    population_breadth: int    # count of accepted instances
+    population_breadth: int       # count of accepted instances
 ```
 
-**New field: `grammatical_frame`** — this is what enables the workflow to distinguish
-`"fire"` (dismiss) from `"fire"` (discharge) from `"fire"` (inspire). Without it, the
-population collapses the tokenization problem back into the concept level.
+**Key design principle:** morphemes and phonesthetics are *optional enrichments*, not
+required fields. The system degrades gracefully when they are absent — the concept
+construction still works at Level 4 → Level 5. When present, they give the LLM
+sub-lexical grounding that produces richer, more semantically precise simulations.
 
 ---
 
@@ -273,6 +337,8 @@ population collapses the tokenization problem back into the concept level.
 | functional adequacy | correctness, accuracy, clarity | adequacy is relational (to goal+context); correctness implies ground truth |
 | concept construction | concept retrieval, concept lookup | Barrett: concepts are built, not fetched |
 | prediction error | mistake, wrong answer | prediction error is a learning signal, not a failure |
+| morpheme | token, subword | morphemes are meaningful; BPE tokens are arbitrary frequency splits |
+| phonesthetics note | sound feature, phoneme tag | phonesthetics is a semantic tendency, not a phonological label |
 | grammatical frame | syntax, grammar tag | frame captures both structure and semantic role |
 | seed phrase | term, keyword, query | seed phrase is grammatically grounded from the start |
 | population breadth | coverage, completeness | breadth is a population property, not a checklist |
@@ -283,8 +349,25 @@ population collapses the tokenization problem back into the concept level.
 ## 6. The One-Sentence Project Description
 
 > We build a workflow that teaches an LLM what a concept is — not as a dictionary entry,
-> but as Barrett describes: a population of goal-indexed, grammatically-grounded simulations,
-> constructed on the fly from words (not tokens), refined through prediction error and human
-> feedback.
+> but as Barrett describes: a population of goal-indexed, grammatically-grounded simulations
+> constructed on the fly from morpheme-aware words (not arbitrary tokens), refined through
+> prediction error and human feedback.
 
 This sentence is the north star. Every design decision should be traceable to it.
+
+---
+
+## 7. The Five-Level Summary (for video narration)
+
+Use this framing in the demo video to explain the architecture quickly:
+
+| Level | Unit | LLM uses? | Our system uses? | Conceptual content |
+|---|---|---|---|---|
+| 0 | Letter / phoneme | as character tokens | optional phonesthetics note | substrate only |
+| 1 | BPE token | ✅ yes (primary) | ❌ rejected | none — arbitrary split |
+| 2 | Morpheme | ❌ no | ✅ optional annotation | bounded sub-lexical meaning |
+| 3 | Word | implicit in tokens | as polysemous seed | potential, ungrounded |
+| 4 | Seed phrase | via attention | ✅ required input | grammatically grounded frame |
+| 5 | Instance | never | ✅ primary output | fully specified concept |
+
+The gap between row 1 and row 5 is the gap this project fills.

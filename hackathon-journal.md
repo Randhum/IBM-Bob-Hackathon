@@ -5,6 +5,73 @@
 
 ---
 
+## Entry 4 — The Sub-Lexical Layer: Morphemes and Phonesthetics
+
+**Trigger:** Team question: should we add a letter/phoneme level below the word, to be fully
+respectful of how concepts are constructed from language?
+
+**The answer — precise and grounded:**
+
+Letters themselves carry no conceptual content (`"f"`, `"i"`, `"r"`, `"e"` → no concept).
+But the question revealed a genuine gap: between the *arbitrary* sub-word BPE token level
+(which LLMs use) and the *meaningful* sub-word morpheme level (which linguistics tells us
+matters for concept construction).
+
+**Two distinct layers introduced:**
+
+1. **Level 2 — Morphemes** (structural, optional field `morphemes: List[str]`)
+   - The right sub-word unit: bounded, semantically meaningful.
+   - `"mis-trust"` → `["mis-", "trust"]`; `"un-employment"` → `["un-", "employ", "-ment"]`
+   - The `"mis-"` prefix shifts the concept; the `"-ment"` suffix nominalizes it.
+   - This is exactly the level BPE tokenization destroys — and the level we now surface.
+   - **NOT BPE tokens.** The distinction is enforced in code, docstrings, and the ontology.
+
+2. **Level 0 annotation — Phonesthetics** (optional free-text `phonesthetics_note: str`)
+   - Sound symbolism: `"sl-"` words cluster around smooth/unpleasant movement.
+   - Injected as a **soft hint** only — does not affect scoring logic.
+   - Optional and free-text: the system degrades gracefully when absent.
+   - Makes the demo richer and the theoretical story more complete.
+
+**Full five-level granularity model now locked:**
+```
+Level 0  Letter/phoneme      substrate; phonesthetics note is optional signal
+Level 1  BPE token           REJECTED — arbitrary, destroys meaning
+Level 2  Morpheme            optional annotation; bounded sub-lexical meaning
+Level 3  Word                polysemous seed
+Level 4  Seed phrase         grammatically framed; minimum required input
+Level 5  Instance            context + goal + simulation; primary output
+```
+
+**What changed:**
+
+- `ConceptInstance` gained:
+  - `morphemes: List[str]` (default `[]`) — Level 2
+  - `phonesthetics_note: str` (default `""`) — Level 0 annotation
+- All prompt builders (`_build_generation_prompt`, `score_instance`, `refine_simulation`)
+  inject both fields when present, skip them cleanly when absent.
+- `main.py` CLI gained `--morphemes` (comma-separated) and `--phonesthetics-note`.
+- `docs/concept-ontology.md` updated with:
+  - §3.4 revised to full 5-level table
+  - §3.5 new section: Phonesthetics — Sound Symbolism as Optional Annotation
+  - §4 data model annotated with new fields
+  - §5 vocabulary table gains `morpheme` and `phonesthetics note` rows
+  - §7 new: Five-Level Summary table for video narration
+  - North star sentence updated: "morpheme-aware words (not arbitrary tokens)"
+
+**Design decision logged:** Morphemes are optional enrichments, not required fields.
+The system operates at Level 4 → Level 5 by default. Levels 2 and 0 enrich the LLM's
+construction when provided — they do not block construction when absent.
+
+**Files changed:**
+- `src/concept_population.py`
+- `src/concept_loop.py`
+- `src/judge.py`
+- `src/concept_refiner.py`
+- `src/main.py`
+- `docs/concept-ontology.md`
+
+---
+
 ## Entry 3 — The Tokenization Layer
 
 **Trigger:** Team member raised a critical architectural gap: the system was treating concept

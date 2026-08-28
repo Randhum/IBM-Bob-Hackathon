@@ -8,7 +8,7 @@ simulation given a current simulation, optional score, and optional human hint.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any, List, Optional
 
 from dotenv import load_dotenv
 
@@ -32,11 +32,17 @@ def refine_simulation(
     current_simulation: str,
     seed_phrase: str = "",
     grammatical_frame: str = "",
+    morphemes: Optional[List[str]] = None,
+    phonesthetics_note: str = "",
     score: Optional[float] = None,
     hint: Optional[str] = None,
     aspect: str = "goal-alignment",
 ) -> Dict[str, Any]:
     """Produce one refined simulation for a concept instance.
+
+    All linguistic layers (Level 2–4) are injected into the refinement prompt to
+    keep the refiner anchored to the correct construction and sub-lexical grounding
+    across iterations (docs/concept-ontology.md §3.4).
 
     Parameters
     ----------
@@ -44,9 +50,10 @@ def refine_simulation(
     context:            Situational context for this instance.
     goal:               Functional goal this concept should serve.
     current_simulation: Simulation text to improve.
-    seed_phrase:        Grammatically framed seed — keeps the refiner anchored to the
-                        correct grammatical construction (docs/concept-ontology.md §3).
-    grammatical_frame:  Syntactic role — same purpose as seed_phrase.
+    seed_phrase:        Grammatically framed seed. Level 4.
+    grammatical_frame:  Syntactic role. Level 4.
+    morphemes:          Meaningful sub-word units. Level 2. Optional.
+    phonesthetics_note: Sound-symbolism annotation. Level 0. Optional.
     score:              Current adequacy score (optional, improves prompt calibration).
     hint:               Human-supplied correction direction (optional).
     aspect:             Focus of improvement: "goal-alignment" | "specificity" |
@@ -61,6 +68,10 @@ def refine_simulation(
             "You are a concept-simulation refiner grounded in predictive cognition.\n",
             f'Concept: "{term}"',
         ]
+        if morphemes:
+            lines.append(f'Morphemes: {", ".join(morphemes)}')
+        if phonesthetics_note:
+            lines.append(f'Sound symbolism: {phonesthetics_note}')
         if seed_phrase:
             lines.append(f'Seed phrase: "{seed_phrase}"')
         if grammatical_frame:

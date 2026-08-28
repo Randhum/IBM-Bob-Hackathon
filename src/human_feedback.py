@@ -142,10 +142,12 @@ def collect_human_feedback(
                 console.print("[red]❌ Rejected — re-running RL loop with hint (round reset).[/red]")
             else:
                 print("❌ Rejected — re-running RL loop with hint (round reset).")
-            # Re-run: reset round, inject hint
+            # Re-run: reset round, inject hint; preserve grammatical grounding from original instance
             new_pop = run_rl_loop(
                 term=term,
                 context_goal_pairs=[(instance.context, instance.goal)],
+                seed_phrase=instance.seed_phrase,
+                grammatical_frame=instance.grammatical_frame,
                 max_iterations=3,
                 threshold=7.5,
                 hint=hint or None,
@@ -155,10 +157,12 @@ def collect_human_feedback(
                 console.print("[yellow]✏️  Refinement requested — re-running RL loop with hint.[/yellow]")
             else:
                 print("✏️  Refinement requested — re-running RL loop with hint.")
-            # Re-run: continue from current round count
+            # Re-run: continue from current round count; preserve grammatical grounding
             new_pop = run_rl_loop(
                 term=term,
                 context_goal_pairs=[(instance.context, instance.goal)],
+                seed_phrase=instance.seed_phrase,
+                grammatical_frame=instance.grammatical_frame,
                 max_iterations=max(1, 3 - instance.round),
                 threshold=7.5,
                 hint=hint or None,

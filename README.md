@@ -2,7 +2,7 @@
 
 A Bob-orchestrated RL+RLHF workflow that builds goal-indexed, context-sensitive concept populations for LLMs — grounded in Lisa Feldman Barrett's constructionist theory of concepts.
 
-> IBM TechXchange Hackathon 2024 — Bob + watsonx.ai
+> IBM TechXchange Hackathon 2026 — Bob + watsonx.ai
 
 ---
 
@@ -10,27 +10,47 @@ A Bob-orchestrated RL+RLHF workflow that builds goal-indexed, context-sensitive 
 
 Lisa Feldman Barrett's constructionist model holds that a concept is not a fixed definition but a *population of variable instances*, each anchored to a specific context and a specific goal — the brain predicts forward by selecting the instance whose simulation is functionally adequate for the situation at hand. Current LLMs store token co-occurrence statistics, not goal-indexed conceptual populations; they have no mechanism to select the contextually adequate instance, producing outputs that are statistically plausible but functionally misaligned. This project introduces the missing layer: a Bob-orchestrated RL+RLHF workflow that builds and evaluates a `ConceptPopulation` per term, scoring each instance for *functional adequacy* in its (context, goal) frame and refining low-scoring instances until the population reaches sufficient coverage.
 
+### Linguistic Granularity Model
+
+The system operates across five levels of linguistic structure — explicitly rejecting the BPE token level that LLMs use, and instead grounding concept construction in morpheme-aware, grammatically-framed inputs:
+
+| Level | Unit | LLM uses? | This system | Conceptual content |
+|---|---|---|---|---|
+| 0 | Letter / phoneme | as character tokens | `phonesthetics_note` (optional soft hint) | substrate only |
+| 1 | BPE token | ✅ primary | ❌ rejected | none — arbitrary frequency split |
+| 2 | Morpheme | ❌ no | `morphemes` field (optional) | bounded sub-lexical meaning |
+| 3 | Word | implicit in tokens | `term` — polysemous seed | potential, ungrounded |
+| 4 | Seed phrase | via attention | `seed_phrase` + `grammatical_frame` — **required** | grammatically grounded frame |
+| 5 | Instance | never | `ConceptInstance` — primary output | fully specified concept |
+
+The gap between row 1 and row 5 is the gap this project fills. See [`docs/concept-ontology.md`](docs/concept-ontology.md) for the full theoretical grounding.
+
 ---
 
 ## Architecture
 
 ```
-Term + (Context, Goal) Pairs
+Term + seed_phrase + grammatical_frame + [morphemes] + [phonesthetics_note]
+     + (Context, Goal) Pairs
         │
         ▼
 Bob Orchestrator (rl-feedback-loop skill)
         │
         ▼
 watsonx.ai Simulator ──► Adequacy Judge (judge.py)
+[Level 2–4 injected     [Level 2–4 injected into
+ into all prompts]       scoring prompt]
         │
-        ▼ [if score < threshold]
+        ▼ [if adequacy_score < threshold]
 Concept Refiner (concept_refiner.py)
         │
         ▼
 RLHF Human Feedback (human_feedback.py)
+[contextual fit signal — accept / reject / refine + hint]
         │
         ▼
 Concept Population Report (report.py)
+[breadth · goal coverage · context coverage · grammatical frame coverage]
         │
         ▼
 docs/concept_population_report.md
@@ -56,6 +76,7 @@ docs/concept_population_report.md
 │   └── demo.ipynb               # End-to-end demo notebook (concept "anger", 3 context/goal pairs)
 │
 ├── docs/
+│   ├── concept-ontology.md             # Shared theoretical grounding — all canonical vocabulary
 │   ├── problem-solution-statement.md   # ≤500-word judge-facing problem & solution statement
 │   ├── bob-usage-statement.md          # Detailed statement on how Bob was used throughout
 │   ├── concept_population_report.md    # Sample Concept Population Report output
@@ -98,11 +119,24 @@ The `.env` file is excluded from version control by `.gitignore` and `.bobignore
 `WATSONX_STUB=true` switches `src/watsonx_client.py` into dry-run mode: generation calls return deterministic stub text and scoring calls return a random float in the 5.0–9.5 range. No API quota is consumed.
 
 ```bash
-# Set WATSONX_STUB=true in .env for demo without API access
+# Minimal — bare term, single context/goal pair
 python -m src.main --term "anger" \
   --context "receiving unfair criticism at work" \
   --goal "restore social fairness" \
   --max-iterations 3 --threshold 7.5 --no-human
+```
+
+```bash
+# Full — with all linguistic layers specified (recommended)
+python -m src.main \
+  --term "fire" \
+  --seed-phrase "to fire (someone)" \
+  --grammatical-frame "transitive verb, agent=manager, patient=employee" \
+  --morphemes "fire" \
+  --phonesthetics-note "fi- cluster: forceful action" \
+  --context "the manager fired her in front of the team" \
+  --goal "restore power balance" \
+  --max-iterations 3 --threshold 7.5
 ```
 
 The report is written to `docs/concept_population_report.md` by default. Use `--output <path>` to override.
@@ -111,6 +145,8 @@ The report is written to `docs/concept_population_report.md` by default. Use `--
 
 ```bash
 python -m src.main --term "safety" \
+  --seed-phrase "a sense of safety" \
+  --grammatical-frame "noun phrase, experiencer subject" \
   --contexts-file contexts.json \
   --max-iterations 5 --threshold 8.0
 ```
@@ -141,16 +177,30 @@ The notebook runs the full concept-learning loop on the term `"anger"` with thre
 
 ## Key Vocabulary (Barrett Alignment)
 
-| Barrett Term | Project Equivalent |
-|---|---|
-| concept instance | `ConceptInstance` dataclass (`src/concept_population.py`) |
-| population | `ConceptPopulation` dataclass; the full set of instances for a term |
-| simulation | the generated text prediction for a given (context, goal) pair |
-| functional adequacy | `adequacy_score` (float 0–10); how well the instance serves the goal in context |
-| goal | the purpose the concept serves in context; drives adequacy scoring |
+| Barrett / Linguistic Term | Project Equivalent | Level |
+|---|---|---|
+| concept instance | `ConceptInstance` dataclass (`src/concept_population.py`) | 5 |
+| population | `ConceptPopulation` — the full set of instances for a term | 5 |
+| simulation | generated text prediction for a (context, goal) pair | 5 |
+| functional adequacy | `adequacy_score` float 0–10; how well the instance serves the goal | 5 |
+| goal | purpose the concept serves in context; drives adequacy scoring | 5 |
+| grammatical frame | `grammatical_frame` field; syntactic role of the seed phrase | 4 |
+| seed phrase | `seed_phrase` field; grammatically framed minimum input unit | 4 |
+| morpheme | `morphemes: List[str]`; meaningful sub-word units (NOT BPE tokens) | 2 |
+| phonesthetics | `phonesthetics_note: str`; optional sound-symbolism soft hint | 0 |
+| prediction error | low `adequacy_score` + human rejection signal → triggers refinement | — |
+| concept construction | the RL+RLHF loop itself; builds instances, never retrieves them | — |
 
-Every module, field name, prompt, and skill in this project uses Barrett vocabulary — "instance", "population", "simulation", "goal", "context", "functional adequacy" — rather than generic "definition" or "clarity" language.
+Every module, field name, prompt, and skill uses Barrett + linguistic vocabulary. See [`docs/concept-ontology.md`](docs/concept-ontology.md) for the full enforced vocabulary table.
 
 ---
 
-Built with IBM Bob + watsonx.ai for IBM TechXchange Hackathon 2024
+---
+
+## Hackathon Journal
+
+[`hackathon-journal.md`](hackathon-journal.md) — running log of all design decisions, theoretical insights, and architectural evolution (4 entries). Start here to understand *why* the system is built the way it is.
+
+---
+
+Built with IBM Bob + watsonx.ai · IBM TechXchange Hackathon 2026

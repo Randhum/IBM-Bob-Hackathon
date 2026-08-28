@@ -35,18 +35,24 @@ def _build_generation_prompt(
     goal: str,
     seed_phrase: str = "",
     grammatical_frame: str = "",
+    morphemes: Optional[List[str]] = None,
+    phonesthetics_note: str = "",
     hint: Optional[str] = None,
 ) -> str:
     """Build the initial simulation generation prompt (rl-feedback-loop SKILL Step 2).
 
-    seed_phrase and grammatical_frame are injected into the prompt so the LLM
-    constructs a simulation for the specific grammatical construction, not the
-    ambiguous bare token (docs/concept-ontology.md §3).
+    Injects all available linguistic layers (Level 2–4) so the LLM constructs a
+    simulation grounded at the right level of the granularity hierarchy, not from
+    an ambiguous bare token (docs/concept-ontology.md §3.4).
     """
     lines = [
         "You are a concept-simulation engine based on predictive cognition.\n",
         f'Concept: "{term}"',
     ]
+    if morphemes:
+        lines.append(f'Morphemes (meaningful sub-word units): {", ".join(morphemes)}')
+    if phonesthetics_note:
+        lines.append(f'Sound symbolism note (soft hint): {phonesthetics_note}')
     if seed_phrase:
         lines.append(f'Seed phrase (grammatically framed): "{seed_phrase}"')
     if grammatical_frame:
@@ -68,6 +74,8 @@ def run_rl_loop(
     context_goal_pairs: List[ContextGoalPair],
     seed_phrase: str = "",
     grammatical_frame: str = "",
+    morphemes: Optional[List[str]] = None,
+    phonesthetics_note: str = "",
     max_iterations: int = 3,
     threshold: float = 7.5,
     hint: Optional[str] = None,
@@ -83,9 +91,11 @@ def run_rl_loop(
     Parameters
     ----------
     term:               Concept term (raw word/phrase).
-    seed_phrase:        Grammatically framed form, e.g. "to fire (someone)".
-                        Injected into all prompts to prevent tokenization collapse.
-    grammatical_frame:  Syntactic role, e.g. "transitive verb, agent=manager, patient=employee".
+    seed_phrase:        Grammatically framed form, e.g. "to fire (someone)". Level 4.
+    grammatical_frame:  Syntactic role, e.g. "transitive verb, agent=manager". Level 4.
+    morphemes:          Optional list of morphemes, e.g. ["mis-", "trust"]. Level 2.
+                        NOT BPE tokens. Injected as soft sub-lexical grounding.
+    phonesthetics_note: Optional sound-symbolism annotation. Level 0 signal. Soft hint only.
     context_goal_pairs: List of (context, goal) tuples to process.
     max_iterations:     Maximum refinement rounds per instance (default: 3).
     threshold:          Adequacy score above which refinement stops (default: 7.5).
@@ -105,6 +115,8 @@ def run_rl_loop(
             term, context, goal,
             seed_phrase=seed_phrase,
             grammatical_frame=grammatical_frame,
+            morphemes=morphemes,
+            phonesthetics_note=phonesthetics_note,
             hint=hint,
         )
         gen_result = call_watsonx(gen_prompt, call_type="generate")
@@ -118,6 +130,8 @@ def run_rl_loop(
             context=context,
             goal=goal,
             simulation=simulation,
+            morphemes=morphemes or [],
+            phonesthetics_note=phonesthetics_note,
             seed_phrase=seed_phrase,
             grammatical_frame=grammatical_frame,
             round=0,
@@ -158,6 +172,8 @@ def run_rl_loop(
                 current_simulation=instance.simulation,
                 seed_phrase=seed_phrase,
                 grammatical_frame=grammatical_frame,
+                morphemes=morphemes,
+                phonesthetics_note=phonesthetics_note,
                 score=instance.adequacy_score,
                 hint=hint,
             )

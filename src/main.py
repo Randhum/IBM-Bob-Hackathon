@@ -51,15 +51,28 @@ def _parse_args(argv: List[str] | None = None) -> argparse.Namespace:
         "--seed-phrase", default="", metavar="PHRASE",
         help=(
             "Grammatically framed form of the term, e.g. 'to fire (someone)'. "
-            "Prevents tokenization collapse — same word, different frame = different concept. "
-            "See docs/concept-ontology.md §3."
+            "Level 4 — prevents tokenization collapse. See docs/concept-ontology.md §3.4."
         ),
     )
     parser.add_argument(
         "--grammatical-frame", default="", metavar="FRAME",
         help=(
             "Syntactic role, e.g. 'transitive verb, agent=manager, patient=employee'. "
-            "Injected into all LLM prompts to anchor concept construction."
+            "Level 4 — anchors concept construction in all LLM prompts."
+        ),
+    )
+    parser.add_argument(
+        "--morphemes", default="", metavar="MORPHEMES",
+        help=(
+            "Comma-separated list of morphemes, e.g. 'mis-,trust'. "
+            "Level 2 — meaningful sub-word units (NOT BPE tokens). Optional soft grounding."
+        ),
+    )
+    parser.add_argument(
+        "--phonesthetics-note", default="", metavar="NOTE",
+        help=(
+            "Optional sound-symbolism annotation, e.g. 'sl- cluster: smooth unpleasantness'. "
+            "Level 0 signal — injected as a soft hint into prompts."
         ),
     )
 
@@ -125,15 +138,19 @@ def main(argv: List[str] | None = None) -> None:
 
     seed_phrase = args.seed_phrase or ""
     grammatical_frame = args.grammatical_frame or ""
+    morphemes = [m.strip() for m in args.morphemes.split(",") if m.strip()] if args.morphemes else []
+    phonesthetics_note = args.phonesthetics_note or ""
 
     print(
         f"\n🚀 Starting concept-learning workflow\n"
-        f"   Term:             {args.term}\n"
-        f"   Seed phrase:      {seed_phrase or '(not set)'}\n"
-        f"   Grammatical frame:{grammatical_frame or '(not set)'}\n"
-        f"   Pairs:            {len(context_goal_pairs)}\n"
-        f"   Max iterations:   {args.max_iterations} | Threshold: {args.threshold}\n"
-        f"   Stub mode:        {os.getenv('WATSONX_STUB', 'false')}\n"
+        f"   Term:              {args.term}\n"
+        f"   Seed phrase:       {seed_phrase or '(not set)'}\n"
+        f"   Grammatical frame: {grammatical_frame or '(not set)'}\n"
+        f"   Morphemes:         {morphemes or '(not set)'}\n"
+        f"   Phonesthetics:     {phonesthetics_note or '(not set)'}\n"
+        f"   Pairs:             {len(context_goal_pairs)}\n"
+        f"   Max iterations:    {args.max_iterations} | Threshold: {args.threshold}\n"
+        f"   Stub mode:         {os.getenv('WATSONX_STUB', 'false')}\n"
     )
 
     # ── Step 1: RL loop ────────────────────────────────────────────────────
@@ -142,6 +159,8 @@ def main(argv: List[str] | None = None) -> None:
         context_goal_pairs=context_goal_pairs,
         seed_phrase=seed_phrase,
         grammatical_frame=grammatical_frame,
+        morphemes=morphemes,
+        phonesthetics_note=phonesthetics_note,
         max_iterations=args.max_iterations,
         threshold=args.threshold,
         hint=args.hint,

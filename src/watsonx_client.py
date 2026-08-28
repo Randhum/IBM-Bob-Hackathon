@@ -14,6 +14,8 @@ import time
 import logging
 from typing import List, Optional, Dict, Any
 
+_STUB_RNG = random.Random(42)  # seeded for reproducible stub-mode runs
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -41,7 +43,7 @@ def _is_stub_mode() -> bool:
 def _stub_response(call_type: str, prompt: str, model_id: str) -> Dict[str, Any]:
     """Return a deterministic-enough stub response for dry-run mode."""
     if call_type == "score":
-        score = round(random.uniform(5.0, 9.5), 2)
+        score = round(_STUB_RNG.uniform(5.0, 9.5), 2)
         return {
             "response": str(score),
             "score": score,
