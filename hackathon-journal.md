@@ -5,6 +5,78 @@
 
 ---
 
+## Entry 5 — Construction-Domain Training: Two-Track LoRA Fine-Tuning
+
+**Trigger:** Strategic pivot — move from a pure runtime demonstration (concept population
+built at inference time) to a full training demonstration: use the Barrett-structured
+self-generated corpus as *labelled training data* to LoRA fine-tune Granite 3B on
+watsonx.ai Tuning Studio, then compare trained vs base models on construction-domain
+concept tasks.
+
+**The core insight that unlocked the pivot:**
+
+The same 50 `(context, goal, simulation, adequacy_score)` tuples we generate to build a
+ConceptPopulation can be reformatted into *two distinct training signals* without any
+additional generation:
+
+- **Format A — Judge training:** prompt = full instance, completion = adequacy score string.
+  Model learns to score functional adequacy in the construction domain.
+- **Format B — Generator training:** prompt = context + goal, completion = high-quality
+  simulation text (score ≥ 8.0 instances only). Model learns to construct goal-indexed
+  concept simulations for construction-domain terms.
+
+This means the self-generation step is not just a demo — it is a *data pipeline*. Barrett's
+concept-as-population framework becomes the data generation strategy, not just the framing.
+
+**Architecture decision: two LoRA jobs, same base model:**
+
+Both jobs target `ibm/granite-3b-code-instruct` on watsonx.ai Tuning Studio (cloud infra —
+no local GPU). Both run from the same base model with the same hyperparameters (5 epochs,
+batch 8, lr 2e-4). The only difference is the training file and the learned behaviour.
+Both jobs can run in parallel overnight.
+
+**Evaluation design: three-way comparison:**
+
+The benchmark notebook (`notebooks/construction_benchmark.ipynb`) compares three models:
+1. **Base** — `ibm/granite-3b-code-instruct` cold, no domain training
+2. **Generator-tuned** — trained on Format B; should produce better goal-anchored simulations
+3. **Judge-tuned** — trained on Format A; should score construction-domain adequacy more accurately
+
+Cross-product scoring (all three models generate, both base+tuned judge evaluate) produces
+two independent deltas per term — making Barrett's claim empirically testable from two angles.
+
+**Construction domain rationale:**
+
+Narrow enough (10 terms) that 50 labelled examples produce a visible domain shift. Specific
+enough (scaffolding, load-bearing, site induction, liability, etc.) that the base model's
+generic priors are a meaningful and detectable comparison baseline.
+
+**All compute runs on IBM Cloud:**
+
+- Self-generation: watsonx.ai inference API (Granite 13B)
+- LoRA training: watsonx.ai Tuning Studio (both jobs)
+- Evaluation: watsonx.ai inference API (three model endpoints)
+- Local machine: only lightweight Python scripts and the Jupyter notebook
+
+**Files introduced by this entry:**
+- `construction-domain-training-plan.md` — full 6-sub-task plan
+- `data/corpus_spec.json` — human-authored seed (Sub-Task 1)
+- `src/generate_corpus.py` — batch generation script (Sub-Task 2)
+- `src/export_training_data.py` — dual-format JSONL exporter (Sub-Task 3)
+- `src/launch_tuning_job.py` — SDK script for both LoRA jobs (Sub-Task 4)
+- `notebooks/construction_benchmark.ipynb` — three-way evaluation notebook (Sub-Task 5)
+- `docs/construction-training-report.md` — training report template (Sub-Task 6)
+
+**Standing decisions updated:**
+
+| Decision | Rationale |
+|---|---|
+| Generator is also fine-tuned, not just the judge | Same corpus, Format B export — no extra generation cost |
+| Score threshold for generator training data: ≥ 8.0 | Model must learn from high-quality targets only; low-scoring simulations would teach the wrong pattern |
+| Held-out eval: one instance per term, highest-scoring | Clean per-term delta; ensures eval set is not contaminated by training data |
+
+---
+
 ## Entry 4 — The Sub-Lexical Layer: Morphemes and Phonesthetics
 
 **Trigger:** Team question: should we add a letter/phoneme level below the word, to be fully

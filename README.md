@@ -58,6 +58,29 @@ docs/concept_population_report.md
 
 ---
 
+## Construction Domain Training
+
+A second demonstration layer built on top of the runtime workflow: the same Barrett-structured
+self-generated corpus is used as labelled training data to LoRA fine-tune `ibm/granite-3b-code-instruct`
+on **watsonx.ai Tuning Studio** (IBM Cloud — no local GPU required).
+
+**Two training tracks from one corpus:**
+
+| Track | JSONL format | Training signal | Input | Output |
+|---|---|---|---|---|
+| **Judge** | Format A | All accepted instances, full score range | term + context + goal + simulation | adequacy score string |
+| **Generator** | Format B | High-quality instances only (score ≥ 8.0) | term + context + goal | simulation text |
+
+**Three-way evaluation** in `notebooks/construction_benchmark.ipynb` compares base / generator-tuned / judge-tuned models on both generation quality and adequacy scoring, with a per-term delta table.
+
+| Resource | Link |
+|---|---|
+| Full training plan | [construction-domain-training-plan.md](construction-domain-training-plan.md) |
+| Training report | [docs/construction-training-report.md](docs/construction-training-report.md) |
+| Benchmark notebook | [notebooks/construction_benchmark.ipynb](notebooks/construction_benchmark.ipynb) |
+
+---
+
 ## Project Structure
 
 ```
@@ -70,32 +93,48 @@ docs/concept_population_report.md
 │   ├── concept_refiner.py       # Single-step simulation refinement with optional hint
 │   ├── human_feedback.py        # CLI RLHF: presents instances, collects accept/reject/refine signal
 │   ├── report.py                # Renders Concept Population Report as markdown
-│   └── watsonx_client.py        # IBM watsonx.ai API client; supports WATSONX_STUB=true dry-run
+│   ├── watsonx_client.py        # IBM watsonx.ai API client; supports WATSONX_STUB=true dry-run
+│   ├── generate_corpus.py       # Batch generation over corpus_spec.json (construction domain)
+│   ├── export_training_data.py  # Dual-format JSONL exporter (judge + generator training sets)
+│   └── launch_tuning_job.py     # SDK script: upload JSONL + start LoRA job on Tuning Studio
+│
+├── data/
+│   ├── corpus_spec.json                     # 10 construction terms × 5 (context, goal) pairs
+│   ├── construction_raw_population.json     # Auto-scored instances from generation run
+│   ├── construction_labelled_population.json # After hybrid human review of borderline cases
+│   ├── construction_judge_training.jsonl    # Judge fine-tuning set (Format A, ≥40 lines)
+│   ├── construction_generator_training.jsonl # Generator fine-tuning set (Format B, ≥25 lines)
+│   ├── construction_eval.jsonl              # Held-out eval set (one per term, highest scoring)
+│   └── tuning_job_config.json              # Both LoRA job IDs + tuned model IDs
 │
 ├── notebooks/
-│   └── demo.ipynb               # End-to-end demo notebook (concept "anger", 3 context/goal pairs)
+│   ├── demo.ipynb                   # End-to-end demo notebook (concept "anger", 3 context/goal pairs)
+│   └── construction_benchmark.ipynb # Three-way before-vs-after evaluation notebook
 │
 ├── docs/
-│   ├── concept-ontology.md             # Shared theoretical grounding — all canonical vocabulary
-│   ├── problem-solution-statement.md   # ≤500-word judge-facing problem & solution statement
-│   ├── bob-usage-statement.md          # Detailed statement on how Bob was used throughout
-│   ├── concept_population_report.md    # Sample Concept Population Report output
-│   └── anger_population.json           # Sample ConceptPopulation JSON (term: "anger")
+│   ├── concept-ontology.md                # Shared theoretical grounding — all canonical vocabulary
+│   ├── problem-solution-statement.md      # ≤500-word judge-facing problem & solution statement
+│   ├── bob-usage-statement.md             # Detailed statement on how Bob was used throughout
+│   ├── concept_population_report.md       # Sample Concept Population Report output
+│   ├── construction-training-report.md    # Full two-track training report (results filled post-run)
+│   ├── tuning-setup.md                    # Step-by-step instructions to reproduce both LoRA jobs
+│   └── eli9-explainer.md                  # Jargon-free project explainer with training effort estimates
 │
 ├── assets/
 │   └── screenshots/             # Bob session summary screenshots (Plan + Agent mode)
 │
 ├── .bob/skills/
-│   ├── watsonx-api-caller/      # Standardized watsonx.ai LLM call pattern
-│   ├── rl-feedback-loop/        # Inner RL auto-scoring loop skill
-│   ├── rlhf-human-feedback/     # Human contextual fit feedback skill
+│   ├── watsonx-api-caller/           # Standardized watsonx.ai LLM call pattern
+│   ├── rl-feedback-loop/             # Inner RL auto-scoring loop skill
+│   ├── rlhf-human-feedback/          # Human contextual fit feedback skill
 │   ├── concept-definition-refiner/   # Single-step simulation refinement skill
-│   ├── concept-clarity-report/  # Concept Population Report renderer skill
+│   ├── concept-clarity-report/       # Concept Population Report renderer skill
 │   └── hackathon-deliverable-writer/ # Drafts judge-facing written deliverables
 │
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Credential template (copy to .env; never commit .env)
-└── hackathon-kickoff-plan.md    # Full project plan produced in Bob Plan mode session
+├── requirements.txt                     # Python dependencies
+├── .env.example                         # Credential template (copy to .env; never commit .env)
+├── hackathon-kickoff-plan.md            # Original project plan (Bob Plan mode session)
+└── construction-domain-training-plan.md # Construction domain training plan (6 sub-tasks)
 ```
 
 ---
