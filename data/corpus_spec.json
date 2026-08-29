@@ -1,0 +1,286 @@
+{
+  "domain": "construction",
+  "description": "10 construction-industry concept terms, each with 5 human-authored (context, goal) pairs. Used as the seed for Barrett-aligned self-generation and LoRA fine-tuning.",
+  "terms": [
+    {
+      "term": "scaffolding",
+      "seed_phrase": "to erect scaffolding",
+      "grammatical_frame": "transitive verb, agent=crew, patient=structure",
+      "morphemes": ["scaffold", "-ing"],
+      "instances": [
+        {
+          "context": "The facade restoration crew must erect scaffolding around a 12-storey residential block before brick repointing can begin.",
+          "goal": "provide safe elevated access for workers at every floor level"
+        },
+        {
+          "context": "A scaffold tube struck a passing pedestrian after an unsecured clamp failed during a storm on a city-centre site.",
+          "goal": "identify the root cause of the structural failure to prevent recurrence"
+        },
+        {
+          "context": "The project manager is planning scaffold hire duration against the programme to minimise cost while keeping access live for bricklayers.",
+          "goal": "optimise scaffold hire period against the construction programme"
+        },
+        {
+          "context": "The site supervisor must inspect the scaffold each Monday morning before operatives are permitted to use it for the working week.",
+          "goal": "verify structural integrity and compliance before permitting access"
+        },
+        {
+          "context": "The scaffold contractor has submitted a design drawing for a complex birdcage scaffold over a listed building roof requiring temporary propping.",
+          "goal": "review the scaffold design for structural adequacy and heritage compliance"
+        }
+      ]
+    },
+    {
+      "term": "load-bearing",
+      "seed_phrase": "a load-bearing wall",
+      "grammatical_frame": "attributive adjective modifying noun, head=wall",
+      "morphemes": ["load", "-bear", "-ing"],
+      "instances": [
+        {
+          "context": "The contractor proposes to remove an internal wall to open up the ground floor plan of a Victorian terrace, and the structural engineer must assess whether it is load-bearing.",
+          "goal": "determine whether removal requires a structural steel beam and temporary propping"
+        },
+        {
+          "context": "During a demolition survey a site operative breached a load-bearing masonry wall without authorisation, causing partial floor collapse above.",
+          "goal": "assess structural risk and establish an emergency propping strategy"
+        },
+        {
+          "context": "The architect's drawing labels a partition as non-structural, but the contractor suspects it is load-bearing based on its position and the joist direction above.",
+          "goal": "resolve the structural ambiguity before proceeding with the works"
+        },
+        {
+          "context": "A homeowner wants to convert the loft, and the structural engineer must calculate whether the existing ceiling joists can carry the new floor loading or must be replaced.",
+          "goal": "determine whether the existing structure can carry the proposed additional load"
+        },
+        {
+          "context": "The fire compartmentation strategy requires a load-bearing concrete core to maintain structural stability for at least 90 minutes under fire conditions.",
+          "goal": "confirm the structural element meets the required fire resistance period"
+        }
+      ]
+    },
+    {
+      "term": "tolerances",
+      "seed_phrase": "construction tolerances",
+      "grammatical_frame": "plural noun, head of noun phrase, attributive modifier=construction",
+      "morphemes": ["toler", "-ance", "-s"],
+      "instances": [
+        {
+          "context": "The precast concrete panel contractor has delivered units 18 mm out of plumb, and the architect must decide whether this falls within acceptable tolerances for the curtain wall system.",
+          "goal": "determine whether the deviation is acceptable or requires remedial action"
+        },
+        {
+          "context": "The steelwork erector and the brickwork subcontractor are disputing whose responsibility it is to accommodate a 22 mm horizontal setting-out discrepancy between the steel frame and the masonry skin.",
+          "goal": "assign contractual responsibility for remedying the setting-out discrepancy"
+        },
+        {
+          "context": "The floor screed has been laid with surface regularity deviations of ±6 mm under a 3 m straightedge, exceeding the TR34 specification for a racking warehouse floor.",
+          "goal": "assess whether the floor performance will be acceptable for the racking system"
+        },
+        {
+          "context": "The mechanical engineer is designing a pipe run through precast planks and needs to specify the hole-position tolerance so that the structural engineer can confirm no rebar is cut.",
+          "goal": "set a buildable hole-position tolerance that protects structural integrity"
+        },
+        {
+          "context": "A cladding contractor is pricing a tender and must allow for the dimensional tolerances in the primary steel frame when sizing the fixing brackets.",
+          "goal": "price the bracket adjustment range to absorb expected frame tolerances"
+        }
+      ]
+    },
+    {
+      "term": "site induction",
+      "seed_phrase": "to deliver a site induction",
+      "grammatical_frame": "transitive verb phrase, agent=site-manager, patient=new-operative",
+      "morphemes": ["site", "in-", "duct", "-ion"],
+      "instances": [
+        {
+          "context": "A new groundworks subcontractor is mobilising 12 operatives to site on Monday and the site manager must complete the site induction before any work begins.",
+          "goal": "ensure all operatives understand site-specific hazards and emergency procedures before starting work"
+        },
+        {
+          "context": "An HSE inspector arrived unannounced and found a labourer on site without a record of having completed the site induction.",
+          "goal": "demonstrate compliance with CDM regulations and correct the gap in the induction record"
+        },
+        {
+          "context": "The project involves working adjacent to a live railway and the site induction must cover Network Rail safe-system-of-work requirements in addition to the standard site rules.",
+          "goal": "incorporate railway-specific safety requirements into the induction briefing"
+        },
+        {
+          "context": "A site induction was delivered verbally with no written record kept, and following a near-miss the contractor cannot prove the injured operative received safety training.",
+          "goal": "establish an auditable induction record to support the incident investigation"
+        },
+        {
+          "context": "The main contractor has 15 different subcontractors on site simultaneously and needs a scalable induction process that can handle 20 new starters on any given morning.",
+          "goal": "design an efficient induction system that maintains quality while handling high throughput"
+        }
+      ]
+    },
+    {
+      "term": "curing",
+      "seed_phrase": "curing of concrete",
+      "grammatical_frame": "gerund noun phrase, head=curing, prepositional complement=of concrete",
+      "morphemes": ["cur", "-ing"],
+      "instances": [
+        {
+          "context": "The concrete slab for a warehouse floor has been poured in August and the site engineer must specify the curing regime to prevent plastic shrinkage cracking in the hot, dry weather.",
+          "goal": "prevent early-age cracking by maintaining adequate moisture and temperature at the slab surface"
+        },
+        {
+          "context": "A bridge deck pour will take place in January and the structural engineer must specify the minimum curing period before traffic loading can be applied.",
+          "goal": "determine the minimum curing period required to achieve the specified design strength"
+        },
+        {
+          "context": "The post-tensioned transfer slab cannot be stressed until the concrete has achieved a minimum cube strength, and the curing regime determines when stressing can begin.",
+          "goal": "predict when the concrete will reach the minimum stressing strength based on the curing conditions"
+        },
+        {
+          "context": "The specification requires 7 days wet curing using polythene sheeting, but the contractor has stripped the formwork after 24 hours citing programme pressure.",
+          "goal": "assess whether early formwork removal and inadequate curing has compromised the structural integrity"
+        },
+        {
+          "context": "The client is requesting a fast-track programme and asks whether accelerated curing using steam or heating can reduce the curing period on the precast element production line.",
+          "goal": "evaluate whether accelerated curing methods can safely reduce the production cycle time"
+        }
+      ]
+    },
+    {
+      "term": "formwork",
+      "seed_phrase": "to strike the formwork",
+      "grammatical_frame": "transitive verb phrase, agent=carpenter, patient=formwork",
+      "morphemes": ["form", "work"],
+      "instances": [
+        {
+          "context": "The carpenter is planning when to strike the wall formwork on a retaining wall pour so that the concrete surface is not damaged and the required strength has been achieved.",
+          "goal": "determine the earliest safe time to remove the formwork without damaging the concrete"
+        },
+        {
+          "context": "The formwork for a transfer beam has deflected 18 mm at mid-span under the wet concrete load, and the structural engineer must assess whether this exceeds the allowable camber.",
+          "goal": "assess whether formwork deflection will produce a beam with unacceptable sag after striking"
+        },
+        {
+          "context": "The contractor is comparing proprietary system formwork against traditional timber shuttering for a repetitive core-wall lift cycle and must evaluate cost and cycle-time implications.",
+          "goal": "select the most cost-effective and programme-efficient formwork system for the core wall"
+        },
+        {
+          "context": "A formwork collapse on a multi-storey in-situ concrete frame has resulted in three operatives being injured, and the HSE has issued a prohibition notice.",
+          "goal": "identify the immediate cause of the formwork collapse and prevent further incidents"
+        },
+        {
+          "context": "The architect requires an off-form concrete finish to Grade F3 standard and the formwork contractor must specify the panel type, release agent, and pour sequence.",
+          "goal": "specify the formwork system and pour methodology to achieve the specified off-form concrete finish"
+        }
+      ]
+    },
+    {
+      "term": "sub-contractor",
+      "seed_phrase": "to appoint a sub-contractor",
+      "grammatical_frame": "transitive verb phrase, agent=main-contractor, patient=sub-contractor",
+      "morphemes": ["sub-", "contract", "-or"],
+      "instances": [
+        {
+          "context": "The main contractor is procuring a mechanical and electrical sub-contractor for a hospital fit-out and must carry out pre-qualification checks before placing the order.",
+          "goal": "verify the sub-contractor's financial stability, technical competence, and insurance before appointment"
+        },
+        {
+          "context": "A domestic sub-contractor has left site mid-contract without completing the structural steelwork, leaving the programme 3 weeks behind and the frame exposed to weather.",
+          "goal": "recover the programme and protect the partially erected steel frame from further damage"
+        },
+        {
+          "context": "The main contractor intends to novate the design sub-contractor's appointment from the employer to themselves at the point of contract award.",
+          "goal": "transfer design liability from the employer to the main contractor through novation"
+        },
+        {
+          "context": "The main contractor has subcontracted 90% of the works by value and the project manager must decide how to manage design coordination between five sub-contractors working simultaneously.",
+          "goal": "establish a design coordination protocol that prevents interface clashes between concurrent sub-contractor packages"
+        },
+        {
+          "context": "A sub-contractor has submitted a loss and expense claim following a 6-week employer delay and the quantity surveyor must assess the entitlement under the sub-contract conditions.",
+          "goal": "evaluate the sub-contractor's contractual entitlement to loss and expense for the employer-caused delay"
+        }
+      ]
+    },
+    {
+      "term": "PPE",
+      "seed_phrase": "wearing appropriate PPE",
+      "grammatical_frame": "gerund phrase, head=wearing, object=PPE, modifier=appropriate",
+      "morphemes": ["PPE"],
+      "instances": [
+        {
+          "context": "A roofer is working on a fragile roof without a hard hat, high-visibility vest, or fall-arrest harness, and the site manager has just noticed from below.",
+          "goal": "immediately stop the unsafe work and enforce compliance with the required PPE"
+        },
+        {
+          "context": "The occupational health advisor is reviewing hand-arm vibration exposure for concrete breaker operators and must specify whether anti-vibration gloves are required as PPE.",
+          "goal": "determine whether anti-vibration gloves provide sufficient protection for the exposure duration"
+        },
+        {
+          "context": "A worker suffered a serious eye injury from cement splash, and the investigation found that safety glasses were available on site but not being worn during the mixing operation.",
+          "goal": "identify why PPE compliance failed and implement controls to prevent recurrence"
+        },
+        {
+          "context": "The project involves confined space entry into a sewer and the site manager must specify the breathing apparatus and PPE requirements for the entry team and standby rescue team.",
+          "goal": "specify the correct respiratory PPE and rescue equipment for a confined-space entry in a sewer environment"
+        },
+        {
+          "context": "The main contractor is reviewing PPE costs and the procurement manager proposes switching to a cheaper hard hat supplier; the safety manager must assess whether the cheaper product meets EN397.",
+          "goal": "verify the alternative hard hat meets the required safety standard before approving the switch"
+        }
+      ]
+    },
+    {
+      "term": "practical completion",
+      "seed_phrase": "to certify practical completion",
+      "grammatical_frame": "transitive verb phrase, agent=contract-administrator, patient=works",
+      "morphemes": ["practical", "complet", "-ion"],
+      "instances": [
+        {
+          "context": "The contract administrator is inspecting the completed building to decide whether to issue the practical completion certificate despite a list of 47 snagging items still outstanding.",
+          "goal": "determine whether the outstanding defects prevent practical completion being certified"
+        },
+        {
+          "context": "The employer wants to take possession of a completed wing of a phased hospital project before the rest of the building is finished, and the contractor disputes whether sectional completion provisions apply.",
+          "goal": "establish whether the contract permits sectional practical completion for the occupied wing"
+        },
+        {
+          "context": "Practical completion was certified 3 months late due to the contractor's programme overrun, and the employer is seeking to deduct liquidated damages at the rate stated in the contract.",
+          "goal": "calculate the liquidated damages entitlement based on the certified delay to practical completion"
+        },
+        {
+          "context": "The contractor is claiming that practical completion was achieved on the programmed date even though the certificate was not issued, arguing the employer had beneficial use of the building.",
+          "goal": "assess whether beneficial occupation by the employer constitutes de facto practical completion"
+        },
+        {
+          "context": "The defects liability period begins at practical completion, and the contractor needs to understand when their obligation to return and remedy defects formally expires.",
+          "goal": "determine the start and end dates of the defects liability period relative to the practical completion certificate"
+        }
+      ]
+    },
+    {
+      "term": "liability",
+      "seed_phrase": "contractual liability",
+      "grammatical_frame": "noun phrase, head=liability, attributive modifier=contractual",
+      "morphemes": ["liabil", "-ity"],
+      "instances": [
+        {
+          "context": "A structural engineer's design error caused a retaining wall to fail 18 months after completion, and the question is whether the engineer's professional indemnity insurance covers the claim.",
+          "goal": "establish whether the design error falls within the engineer's covered professional liability"
+        },
+        {
+          "context": "The main contractor is arguing that a nominated sub-contractor's defective waterproofing is the employer's liability because the employer selected the sub-contractor.",
+          "goal": "determine which party bears contractual liability for the nominated sub-contractor's defective work"
+        },
+        {
+          "context": "The building contract includes a net contribution clause limiting each consultant's liability to their proportionate share of the loss, and the employer's solicitor is challenging its enforceability.",
+          "goal": "assess whether the net contribution clause is enforceable to limit the consultant's liability exposure"
+        },
+        {
+          "context": "A visitor slipped on an unguarded excavation edge on a construction site at night and is pursuing a personal injury claim against the main contractor.",
+          "goal": "assess the main contractor's occupier's liability exposure and the adequacy of their site security measures"
+        },
+        {
+          "context": "The contractor is reviewing whether to accept a design-and-build contract with unlimited liability for fitness for purpose of the completed building.",
+          "goal": "quantify the risk exposure of accepting unlimited fitness-for-purpose liability before signing the contract"
+        }
+      ]
+    }
+  ]
+}

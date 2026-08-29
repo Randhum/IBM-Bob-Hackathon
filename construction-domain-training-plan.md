@@ -138,7 +138,7 @@ construction-domain scenarios and the goals are genuine functional purposes, not
 - See `docs/concept-ontology.md` §2.4 and §2.5 for the rules on what makes a valid context
   and goal.
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 
@@ -179,7 +179,7 @@ instances ready for JSONL export.
   The 3B model is only used for fine-tuning, not generation.
 - `src/watsonx_client.py` → `call_watsonx()` is the entry point for all LLM calls.
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 
@@ -245,7 +245,7 @@ teaches generation (generator). No additional generation is needed.
 - The generator JSONL must NOT include the simulation in the input — that is the target the
   model learns to produce.
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 
@@ -306,7 +306,7 @@ config file that the evaluation notebook reads.
 - `data/tuning_job_config.json` is the single handoff artifact Sub-Task 5 reads to get
   both model IDs.
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 
@@ -366,7 +366,7 @@ judge-tuned model evaluates them accurately in the construction domain.
 - `data/tuning_job_config.json` (Sub-Task 4) — source of `judge_job.tuned_model_id` and
   `generator_job.tuned_model_id`.
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 
@@ -411,7 +411,7 @@ two LoRA jobs → three-way evaluation.
   | scaffolding | ? | ? | ? | ? | ? | ? |
   ```
 
-**Status:** [ ] pending
+**Status:** [x] done
 
 ---
 

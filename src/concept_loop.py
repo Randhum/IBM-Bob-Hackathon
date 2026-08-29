@@ -29,7 +29,7 @@ ContextGoalPair = Tuple[str, str]
 ContextGoalPairFull = Tuple[str, str, str, str]  # (context, goal, seed_phrase, grammatical_frame)
 
 
-def _build_generation_prompt(
+def build_generator_prompt(
     term: str,
     context: str,
     goal: str,
@@ -79,6 +79,7 @@ def run_rl_loop(
     max_iterations: int = 3,
     threshold: float = 7.5,
     hint: Optional[str] = None,
+    model_id: Optional[str] = None,
 ) -> ConceptPopulation:
     """Run the RL auto-scoring loop and return a populated ConceptPopulation.
 
@@ -111,7 +112,7 @@ def run_rl_loop(
         logger.info("RL loop — term=%r context=%r goal=%r", term, context[:40], goal[:40])
 
         # ── Step 2: Generate initial simulation (Round 0) ──────────────────
-        gen_prompt = _build_generation_prompt(
+        gen_prompt = build_generator_prompt(
             term, context, goal,
             seed_phrase=seed_phrase,
             grammatical_frame=grammatical_frame,
@@ -119,7 +120,7 @@ def run_rl_loop(
             phonesthetics_note=phonesthetics_note,
             hint=hint,
         )
-        gen_result = call_watsonx(gen_prompt, call_type="generate")
+        gen_result = call_watsonx(gen_prompt, call_type="generate", model_id=model_id)
         simulation = (gen_result.get("response") or "").strip()
 
         if not simulation:
@@ -142,6 +143,7 @@ def run_rl_loop(
             term, context, goal, simulation,
             seed_phrase=seed_phrase,
             grammatical_frame=grammatical_frame,
+            model_id=model_id,
         )
         instance.adequacy_score = score
         instance.record_round()  # capture Round 0 in history (initial_score property reads [0])
@@ -187,6 +189,7 @@ def run_rl_loop(
                 term, context, goal, instance.simulation,
                 seed_phrase=seed_phrase,
                 grammatical_frame=grammatical_frame,
+                model_id=model_id,
             )
             instance.adequacy_score = score
             instance.record_round()  # capture this round in history

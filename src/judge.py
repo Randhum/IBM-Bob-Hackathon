@@ -23,7 +23,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def score_instance(
+def build_judge_prompt(
     term: str,
     context: str,
     goal: str,
@@ -32,27 +32,11 @@ def score_instance(
     grammatical_frame: str = "",
     morphemes: Optional[List[str]] = None,
     phonesthetics_note: str = "",
-) -> Optional[float]:
-    """Score a concept simulation for functional adequacy.
+) -> str:
+    """Build the judge prompt for functional adequacy scoring.
 
-    Uses the judge prompt from the rl-feedback-loop skill (Step 3).
-    seed_phrase and grammatical_frame are included so the judge evaluates the
-    simulation against the specific grammatical construction, not the bare token.
-
-    Parameters
-    ----------
-    term:              The concept being evaluated (e.g. "anger", "fire").
-    context:           The situational context for this instance.
-    goal:              The functional goal the concept is serving.
-    simulation:        The simulation text to score.
-    seed_phrase:       Grammatically framed seed. Level 4.
-    grammatical_frame: Syntactic role. Level 4.
-    morphemes:         Meaningful sub-word units. Level 2. Optional soft context.
-    phonesthetics_note: Sound-symbolism annotation. Level 0 signal. Optional.
-
-    Returns
-    -------
-    Float 0–10 representing functional adequacy, or None if scoring failed.
+    Extracted as a public helper so export_training_data.py can build Format A
+    JSONL training examples without making an API call.
     """
     lines = [f'Concept: "{term}"']
     if morphemes:
@@ -73,9 +57,52 @@ def score_instance(
         "would produce in this context to serve this goal?)",
         "Reply with only a number.",
     ]
-    prompt = "\n".join(lines)
+    return "\n".join(lines)
 
-    result = call_watsonx(prompt, call_type="score")
+
+def score_instance(
+    term: str,
+    context: str,
+    goal: str,
+    simulation: str,
+    seed_phrase: str = "",
+    grammatical_frame: str = "",
+    morphemes: Optional[List[str]] = None,
+    phonesthetics_note: str = "",
+    model_id: Optional[str] = None,
+) -> Optional[float]:
+    """Score a concept simulation for functional adequacy.
+
+    Uses the judge prompt from the rl-feedback-loop skill (Step 3).
+    seed_phrase and grammatical_frame are included so the judge evaluates the
+    simulation against the specific grammatical construction, not the bare token.
+
+    Parameters
+    ----------
+    term:              The concept being evaluated (e.g. "anger", "fire").
+    context:           The situational context for this instance.
+    goal:              The functional goal the concept is serving.
+    simulation:        The simulation text to score.
+    seed_phrase:       Grammatically framed seed. Level 4.
+    grammatical_frame: Syntactic role. Level 4.
+    morphemes:         Meaningful sub-word units. Level 2. Optional soft context.
+    phonesthetics_note: Sound-symbolism annotation. Level 0 signal. Optional.
+    model_id:          Optional model override; passed through to call_watsonx().
+                       Defaults to None → falls back to WATSONX_MODEL_ID env var.
+
+    Returns
+    -------
+    Float 0–10 representing functional adequacy, or None if scoring failed.
+    """
+    prompt = build_judge_prompt(
+        term, context, goal, simulation,
+        seed_phrase=seed_phrase,
+        grammatical_frame=grammatical_frame,
+        morphemes=morphemes,
+        phonesthetics_note=phonesthetics_note,
+    )
+
+    result = call_watsonx(prompt, call_type="score", model_id=model_id)
     score = result.get("score")
 
     if score is None:
