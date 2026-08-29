@@ -28,6 +28,14 @@ Credentials required in .env:
 
 from __future__ import annotations
 
+import sys
+
+if sys.version_info < (3, 12):
+    raise RuntimeError(
+        f"Python 3.12+ required (running {sys.version}). "
+        "Recreate your venv: python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt"
+    )
+
 import argparse
 import json
 import logging
@@ -95,7 +103,11 @@ def _get_sdk():
     """Import and return watsonx.ai SDK components, with a helpful error if missing."""
     try:
         from ibm_watsonx_ai import Credentials, APIClient
-        from ibm_watsonx_ai.foundation_models.finetuning import FineTuning
+        try:
+            # SDK >= 1.1.0 moved the module from finetuning -> tuning
+            from ibm_watsonx_ai.foundation_models.tuning import FineTuning
+        except ImportError:
+            from ibm_watsonx_ai.foundation_models.finetuning import FineTuning
         return Credentials, APIClient, FineTuning
     except ImportError as exc:
         raise ImportError(

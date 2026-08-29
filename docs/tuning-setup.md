@@ -12,8 +12,10 @@
 1. IBM Cloud account with access to watsonx.ai.
 2. A watsonx.ai project with Tuning Studio enabled.
 3. API key and Project ID (see `.env.example`).
-4. Python environment with dependencies installed:
+4. Python 3.12 environment with dependencies installed:
    ```bash
+   python3.12 -m venv .venv
+   source .venv/bin/activate
    pip install -r requirements.txt
    ```
 5. `.env` file populated (copy from `.env.example`):
