@@ -195,6 +195,10 @@ Every module, field name, prompt, and skill uses Barrett + linguistic vocabulary
 
 ---
 
+## Explain It Like I'm Nine
+
+New to the project or sharing it with someone who is? [`docs/eli9-explainer.md`](docs/eli9-explainer.md) walks through the full idea without jargon — what the problem is, how the brain does it differently, what this system builds, and how the RL loop works. It also includes a section on **estimated training effort** with the current base model (Granite 13B Instruct v2): per-call token counts, scaling tables across session sizes, and a plain-English rundown of where the model fits well and where its limits are.
+
 ---
 
 ## Hackathon Journal
