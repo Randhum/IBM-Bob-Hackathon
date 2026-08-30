@@ -7,6 +7,9 @@ Polls for completion and writes job IDs + tuned model IDs to data/tuning_job_con
 
 All compute runs on IBM Cloud (watsonx.ai Tuning Studio) — no local GPU required.
 
+Uses the TuneExperiment + FineTuner API from ibm-watsonx-ai>=1.4.11.
+See docs/how-to.md for the full SDK reference.
+
 Usage:
     # Launch both jobs (recommended — they run in parallel on IBM Cloud):
     python -m src.launch_tuning_job --job both
@@ -39,6 +42,7 @@ if sys.version_info < (3, 12):
 import argparse
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -77,7 +81,6 @@ _MAX_POLL_ATTEMPTS = 90  # 90 min maximum poll window
 
 def _get_credentials() -> Dict[str, str]:
     """Load and validate required watsonx.ai credentials from environment."""
-    import os
     missing = []
     creds = {}
     for key in ("WATSONX_API_KEY", "WATSONX_PROJECT_ID"):
@@ -102,31 +105,35 @@ def _get_credentials() -> Dict[str, str]:
 def _get_sdk():
     """Import and return watsonx.ai SDK components, with a helpful error if missing."""
     try:
-        from ibm_watsonx_ai import Credentials, APIClient
-        try:
-            # SDK >= 1.1.0 moved the module from finetuning -> tuning
-            from ibm_watsonx_ai.foundation_models.tuning import FineTuning
-        except ImportError:
-            from ibm_watsonx_ai.foundation_models.finetuning import FineTuning
-        return Credentials, APIClient, FineTuning
+        from ibm_watsonx_ai import Credentials
+        from ibm_watsonx_ai.experiment import TuneExperiment
+        from ibm_watsonx_ai.helpers import DataConnection
+        return Credentials, TuneExperiment, DataConnection
     except ImportError as exc:
         raise ImportError(
             "ibm-watsonx-ai SDK not found or version too old. "
-            "Run: pip install 'ibm-watsonx-ai>=1.1.0'"
+            "Run: pip install 'ibm-watsonx-ai>=1.4.11'"
         ) from exc
 
 
-def _build_client(creds: Dict[str, str]) -> Any:
-    Credentials, APIClient, _ = _get_sdk()
-    credentials = Credentials(url=creds["WATSONX_URL"], api_key=creds["WATSONX_API_KEY"])
-    return APIClient(credentials=credentials, project_id=creds["WATSONX_PROJECT_ID"])
+def _build_experiment(creds: Dict[str, str]) -> Any:
+    """Create and return a TuneExperiment connected to the project."""
+    Credentials, TuneExperiment, _ = _get_sdk()
+    credentials = Credentials(
+        url=creds["WATSONX_URL"],
+        api_key=creds["WATSONX_API_KEY"],
+    )
+    return TuneExperiment(
+        credentials,
+        project_id=creds["WATSONX_PROJECT_ID"],
+    )
 
 
 # ---------------------------------------------------------------------------
 # File upload
 # ---------------------------------------------------------------------------
 
-def _upload_training_file(client: Any, jsonl_path: Path, label: str) -> str:
+def _upload_training_file(experiment: Any, jsonl_path: Path, label: str) -> str:
     """Upload a JSONL file as a watsonx.ai data asset. Returns the asset ID."""
     logger.info("Uploading %s training file: %s", label, jsonl_path)
     if not jsonl_path.exists():
@@ -135,7 +142,8 @@ def _upload_training_file(client: Any, jsonl_path: Path, label: str) -> str:
             "Run src/export_training_data.py first."
         )
 
-    asset_details = client.data_assets.create(
+    # TuneExperiment exposes the underlying APIClient for asset operations
+    asset_details = experiment._client.data_assets.create(
         name=jsonl_path.name,
         file_path=str(jsonl_path),
     )
@@ -149,97 +157,75 @@ def _upload_training_file(client: Any, jsonl_path: Path, label: str) -> str:
 # ---------------------------------------------------------------------------
 
 def _start_tuning_job(
-    client: Any,
-    project_id: str,
+    experiment: Any,
     asset_id: str,
     label: str,
-) -> str:
-    """Create and start a LoRA fine-tuning experiment. Returns the job/experiment ID."""
-    _, _, FineTuning = _get_sdk()
+) -> Any:
+    """Configure and launch a LoRA fine-tuning run. Returns the FineTuner instance."""
+    _, _, DataConnection = _get_sdk()
 
     logger.info("Starting LoRA fine-tuning job: %s", label)
     logger.info(
         "  Base model: %s | epochs: %d | batch: %d | lr: %s",
-        _BASE_MODEL, _LORA_CONFIG["epochs"], _LORA_CONFIG["batch_size"], _LORA_CONFIG["learning_rate"],
+        _BASE_MODEL,
+        _LORA_CONFIG["epochs"],
+        _LORA_CONFIG["batch_size"],
+        _LORA_CONFIG["learning_rate"],
     )
 
-    ft = FineTuning(
-        api_client=client,
-        project_id=project_id,
-    )
-
-    response = ft.run(
-        model_id=_BASE_MODEL,
-        training_data_references=[{
-            "type": "data_asset",
-            "location": {"href": f"/v2/assets/{asset_id}?project_id={project_id}"},
-        }],
-        parameters={
-            "method": _LORA_CONFIG["method"],
-            "num_epochs": _LORA_CONFIG["epochs"],
-            "batch_size": _LORA_CONFIG["batch_size"],
-            "learning_rate": _LORA_CONFIG["learning_rate"],
-        },
+    fine_tuner = experiment.fine_tuner(
         name=f"construction-{label}-lora",
         description=f"Barrett construction-domain LoRA fine-tuning — {label} track",
+        base_model=_BASE_MODEL,
+        task_id="generation",
+        num_epochs=_LORA_CONFIG["epochs"],
+        learning_rate=_LORA_CONFIG["learning_rate"],
+        batch_size=_LORA_CONFIG["batch_size"],
+        verbalizer="### Input: {{input}}\n\n### Response: {{output}}",
+        response_template="\n### Response:\n",
+        auto_update_model=True,
     )
 
-    job_id = response.get("metadata", {}).get("id") or response.get("entity", {}).get("training_id")
-    if not job_id:
-        raise RuntimeError(f"Could not extract job ID from tuning response: {response}")
+    logger.info("  Configured fine_tuner: %s", fine_tuner.get_params())
 
-    logger.info("  ✓ Job started: job_id = %s", job_id)
-    return job_id
+    fine_tuner.run(
+        training_data_references=[
+            DataConnection(data_asset_id=asset_id)
+        ],
+        background_mode=True,
+    )
+
+    logger.info("  ✓ Job submitted (background_mode=True).")
+    return fine_tuner
 
 
 # ---------------------------------------------------------------------------
 # Polling
 # ---------------------------------------------------------------------------
 
-def _poll_job(client: Any, project_id: str, job_id: str, label: str) -> Dict[str, Any]:
-    """Poll a fine-tuning job until completion. Returns the final job details dict."""
-    _, _, FineTuning = _get_sdk()
-    ft = FineTuning(api_client=client, project_id=project_id)
-
-    logger.info("Polling job %s (%s) every %ds…", job_id, label, _POLL_INTERVAL_S)
+def _poll_job(fine_tuner: Any, label: str) -> None:
+    """Poll a FineTuner run until completion or failure."""
+    logger.info("Polling %s job every %ds…", label, _POLL_INTERVAL_S)
 
     for attempt in range(1, _MAX_POLL_ATTEMPTS + 1):
-        details = ft.get_details(training_id=job_id)
-        state = (
-            details.get("entity", {}).get("status", {}).get("state")
-            or details.get("metadata", {}).get("state")
-            or "UNKNOWN"
-        ).upper()
-
+        state = (fine_tuner.get_run_status() or "unknown").lower()
         logger.info("  [%d/%d] %s — state: %s", attempt, _MAX_POLL_ATTEMPTS, label, state)
 
-        if state == "COMPLETED":
+        if state == "completed":
             logger.info("  ✓ %s job completed.", label)
-            return details
-        if state in ("FAILED", "CANCELED", "ERROR"):
+            return
+        if state in ("failed", "canceled", "error"):
+            details = fine_tuner.get_run_details()
             logger.error("  ✗ %s job ended with state: %s", label, state)
             logger.error("  Details: %s", json.dumps(details, indent=2))
-            raise RuntimeError(f"Tuning job {job_id} ({label}) ended with state {state}")
+            raise RuntimeError(f"Tuning job ({label}) ended with state: {state}")
 
         time.sleep(_POLL_INTERVAL_S)
 
     raise TimeoutError(
-        f"Tuning job {job_id} ({label}) did not complete within "
+        f"Tuning job ({label}) did not complete within "
         f"{_MAX_POLL_ATTEMPTS * _POLL_INTERVAL_S / 60:.0f} minutes."
     )
-
-
-def _extract_tuned_model_id(job_details: Dict[str, Any]) -> Optional[str]:
-    """Extract the deployed/tuned model ID from completed job details."""
-    # Try common SDK response paths
-    entity = job_details.get("entity", {})
-    model_id = (
-        entity.get("model_id")
-        or entity.get("results", {}).get("model_id")
-        or entity.get("status", {}).get("message")
-        or job_details.get("metadata", {}).get("tuned_model_id")
-    )
-    return model_id or None
 
 
 # ---------------------------------------------------------------------------
@@ -281,8 +267,7 @@ def _save_config(config: Dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 def _run_job(
-    client: Any,
-    project_id: str,
+    experiment: Any,
     label: str,
     jsonl_path: Path,
     config: Dict[str, Any],
@@ -292,23 +277,34 @@ def _run_job(
     job_key = f"{label}_job"
 
     # Upload training file
-    asset_id = _upload_training_file(client, jsonl_path, label)
+    asset_id = _upload_training_file(experiment, jsonl_path, label)
 
-    # Start tuning job
-    job_id = _start_tuning_job(client, project_id, asset_id, label)
+    # Configure and launch fine-tuner
+    fine_tuner = _start_tuning_job(experiment, asset_id, label)
+
+    # Persist the run details immediately (job ID comes from run details)
+    run_details = fine_tuner.get_run_details()
+    job_id = (
+        run_details.get("metadata", {}).get("id")
+        or run_details.get("entity", {}).get("training_id")
+        or "<see-tuning-studio-ui>"
+    )
     config[job_key]["job_id"] = job_id
     _save_config(config)
+    logger.info("  job_id: %s", job_id)
 
     if not poll:
         logger.info(
-            "  --no-poll set. Job %s submitted. Fill in tuned_model_id manually in %s "
-            "after training completes.", job_id, _JOB_CONFIG
+            "  --no-poll set. Job submitted. Fill in tuned_model_id manually in %s "
+            "after training completes.", _JOB_CONFIG
         )
         return
 
     # Poll to completion
-    job_details = _poll_job(client, project_id, job_id, label)
-    tuned_model_id = _extract_tuned_model_id(job_details)
+    _poll_job(fine_tuner, label)
+
+    # Extract tuned model ID via SDK helper
+    tuned_model_id = fine_tuner.get_model_id()
     config[job_key]["tuned_model_id"] = tuned_model_id or "<extract-from-tuning-studio-ui>"
     _save_config(config)
 
@@ -316,7 +312,7 @@ def _run_job(
         logger.info("  ✓ Tuned model ID: %s", tuned_model_id)
     else:
         logger.warning(
-            "  Could not auto-extract tuned_model_id from job details. "
+            "  Could not auto-extract tuned_model_id (get_model_id() returned None). "
             "Check Tuning Studio UI and fill in %s manually.", _JOB_CONFIG
         )
 
@@ -327,8 +323,7 @@ def _run_job(
 
 def main(args: argparse.Namespace) -> None:
     creds = _get_credentials()
-    client = _build_client(creds)
-    project_id = creds["WATSONX_PROJECT_ID"]
+    experiment = _build_experiment(creds)
 
     config = _load_config()
 
@@ -339,7 +334,7 @@ def main(args: argparse.Namespace) -> None:
         jobs_to_run.append(("generator", _GENERATOR_JSONL))
 
     for label, jsonl_path in jobs_to_run:
-        _run_job(client, project_id, label, jsonl_path, config, poll=not args.no_poll)
+        _run_job(experiment, label, jsonl_path, config, poll=not args.no_poll)
 
     print(f"\n{'─' * 60}")
     print("  TUNING JOB SUMMARY")

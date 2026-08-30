@@ -1,156 +1,106 @@
-# Bob Usage Statement
+# How We Used IBM Bob — and watsonx.ai
 
-**Project:** Optimizing LLM Vocabulary via Concept-Learning Workflow (Barrett-Aligned)
-**Hackathon:** IBM TechXchange Hackathon — Build with Bob
-
----
-
-## 1. Planning with Bob (Plan Mode)
-
-The entire project was architected in a single Bob **Plan mode** session. Before a single line of
-code was written, the team opened Bob, switched to Plan mode, and ran the kickoff session that
-produced `hackathon-kickoff-plan.md`.
-
-In that session, Bob was used to:
-
-- **Reframe the problem theoretically.** The Barrett constructionist model (concepts as
-  goal-indexed populations of contextual instances, not fixed definitions) was identified as the
-  correct theoretical lens for diagnosing why LLMs fail at contextual concept use. Bob helped
-  articulate the four key Barrett claims (concepts are not fixed; concepts are predictive;
-  concepts are context-dependent; concepts are learned through prediction error) and mapped each
-  one to a concrete engineering decision in the workflow.
-
-- **Identify the tokenization and grammar layer.** A second planning pass extended the Barrett
-  framing to include the tokenization problem (LLMs operate on sub-word fragments, not words) and
-  the grammar problem (the same word in different grammatical constructions builds different
-  concepts). This produced the `seed_phrase` / `grammatical_frame` fields and the
-  `docs/concept-ontology.md` vocabulary specification. Bob drafted all four sections of that
-  document.
-
-- **Break the project into 7 sub-tasks.** Bob decomposed the full submission into sequenced,
-  dependency-ordered sub-tasks: repository bootstrap, problem statement, Bob usage statement,
-  core Python workflow, README, screenshots, and video. The dependency graph (Sub-Task 1 →
-  Sub-Tasks 2/3/4 in parallel → Sub-Task 5 → 6 → 7) was produced in this session.
-
-- **Define the core data model.** Bob produced the `ConceptPopulation` / `ConceptInstance`
-  schema — including field names (`seed_phrase`, `grammatical_frame`, `context`, `goal`,
-  `simulation`, `adequacy_score`, `human_signal`, `hint`, `round`) — directly in the plan
-  session, before any Python file existed.
-
-- **Design all 6 skills.** Bob identified which skills were needed, what each must do, and which
-  Bob mode (Plan vs Agent) would be used to build them.
-
-The full output of this session is committed as `hackathon-kickoff-plan.md` in the repo root.
+**Project:** Barrett Concept Construction — Two LLMs on watsonx.ai
+**Hackathon:** IBM TechXchange Hackathon 2026 — Build with Bob
 
 ---
 
-## 2. Skill Creation with Bob
+## IBM Bob
 
-All 6 project skills were designed in Bob Plan mode and scaffolded in Bob Agent mode. Each skill
-lives under `.bob/skills/<skill-name>/SKILL.md`.
-
-| Skill | File | Purpose |
-|---|---|---|
-| `watsonx-api-caller` | `.bob/skills/watsonx-api-caller/SKILL.md` | Standardizes every IBM watsonx.ai LLM call: prompt construction, API authentication via `.env`, parameter defaults (`model_id`, `max_new_tokens`, `temperature`), response parsing, and error handling. Single entry point for all watsonx.ai calls in the project. |
-| `rl-feedback-loop` | `.bob/skills/rl-feedback-loop/SKILL.md` | Inner RL loop that grows the `ConceptPopulation`. Iteratively generates contextual concept instances using a judge LLM, scores each for functional adequacy per (context, goal) pair, and runs until an adequacy threshold is reached or max iterations are exhausted. |
-| `rlhf-human-feedback` | `.bob/skills/rlhf-human-feedback/SKILL.md` | Outer RLHF loop for human contextual fit feedback. Presents each instance in its full context/goal/grammatical-frame frame, collects accept / reject / refine signal from the human, and routes the result: accepted instances are committed to the population; rejected or refined instances re-enter the RL loop with the user's hint, adding new instances to the population. |
-| `concept-definition-refiner` | `.bob/skills/concept-definition-refiner/SKILL.md` | Single-step simulation refinement. Takes a term, seed phrase, grammatical frame, context, goal, current simulation, and an optional hint, calls watsonx.ai to produce an improved simulation, and returns the result with a rationale. Used inside the RL loop when an instance scores below threshold. |
-| `concept-clarity-report` | `.bob/skills/concept-clarity-report/SKILL.md` | Renders the Concept Population Report from a completed `ConceptPopulation`. Formats population breadth, grammatical frame coverage, goal-context coverage, per-instance table, adequacy score deltas (round 0 → final), and a verdict on population completeness. |
-| `hackathon-deliverable-writer` | `.bob/skills/hackathon-deliverable-writer/SKILL.md` | Drafts judge-facing written deliverables: the problem-solution statement (`docs/problem-solution-statement.md`, ≤500 words) and this Bob usage statement (`docs/bob-usage-statement.md`). Enforces section order, word counts, and specificity requirements. |
-
-Skills were activated during both development (for Bob to follow when writing code) and at runtime
-(for Bob to drive the live concept-learning session with a user).
+Bob was used in three distinct ways: as a **planning partner**, as a **code generator**, and as a **runtime orchestrator** that drives the live concept-learning loop itself.
 
 ---
 
-## 3. Code Generation with Bob (Agent Mode)
+### 1. Planning (Bob Plan Mode)
 
-All core Python source files were generated by Bob in **Agent mode**, guided by the plan and the
-data model defined in the planning session.
+Before a single line of code was written, the entire project was architected in a Bob **Plan mode** session. That session produced `hackathon-kickoff-plan.md`, committed to the repo root, and it drove every subsequent decision.
 
-| File | What Bob Generated |
+Specifically, Bob in Plan mode:
+
+- **Grounded the problem in Barrett's theory.** Bob helped map Lisa Feldman Barrett's four claims — concepts are not fixed, concepts are predictive, concepts are context-dependent, concepts are learned through prediction error — to concrete engineering decisions: `ConceptPopulation`, `ConceptInstance`, `adequacy_score`, `human_signal`.
+- **Identified the tokenization and grammar gap.** A second planning pass produced the `seed_phrase` / `grammatical_frame` fields and the `docs/concept-ontology.md` vocabulary spec. Bob drafted all sections of that document in Plan mode.
+- **Decomposed the project into 7 dependency-ordered sub-tasks** — repository bootstrap → core Python → training pipeline → evaluation notebook → documentation — and identified which sub-tasks could run in parallel.
+- **Designed the data model.** The `ConceptPopulation` / `ConceptInstance` schema — every field name, type, and Barrett alignment — was produced in the planning session before any Python file existed.
+- **Designed all 6 custom skills** (see below), specifying what each must do and which mode would build them.
+
+A second Plan mode session later drove the Construction Domain Training Plan (`construction-domain-training-plan.md`): the two-track LoRA fine-tuning strategy (Generator track + Judge track from the same self-generated corpus) was conceived and structured entirely in Bob Plan mode.
+
+---
+
+### 2. Code Generation (Bob Agent Mode)
+
+Every source file was generated by Bob in **Agent mode**, then reviewed and refined through targeted edits using `apply_diff` and `search_and_replace` — not wholesale rewrites.
+
+| File | What Bob generated |
 |---|---|
-| `src/concept_population.py` | `ConceptInstance` and `ConceptPopulation` dataclasses with all Barrett-aligned and tokenization-layer fields (`seed_phrase`, `grammatical_frame`, `grammatical_frames`); `to_json()` / `from_json()` serialization; computed properties `initial_score` and `score_delta` for delta reporting. |
-| `src/watsonx_client.py` | IBM watsonx.ai API client wrapping `ibm_watsonx_ai`; loads `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, and `WATSONX_URL` from `.env`; supports `WATSONX_STUB=true` for dry-run demos. |
-| `src/concept_loop.py` | Main RL loop: accepts a seed term, `seed_phrase`, `grammatical_frame`, and list of (context, goal) pairs; injects grammatical fields into all generation and scoring prompts; scores each via `judge.py`; runs K refinement iterations on low-scoring instances; accumulates accepted instances into the `ConceptPopulation`. |
-| `src/judge.py` | LLM-based adequacy scorer; constructs context-aware judge prompt including `seed_phrase` and `grammatical_frame` so the judge evaluates the simulation against the specific grammatical construction; calls watsonx.ai; parses numeric response (0–10). |
-| `src/concept_refiner.py` | Single-step refinement; injects `seed_phrase` and `grammatical_frame` to keep the refiner anchored to the correct grammatical construction; validates for empty output, identical-to-original, and word-count overflow. |
-| `src/human_feedback.py` | CLI RLHF collector; displays term, seed phrase, context, goal, simulation, and adequacy score; collects accept / reject / refine signal + optional hint; on reject/refine re-runs the RL loop with the stored hint and appends new instances to the population. |
-| `src/report.py` | Concept Population Report generator; renders markdown with population breadth, grammatical frame coverage, goal coverage, context coverage, per-instance table with frame column, and score delta from round 0 to final round. |
-| `src/main.py` | CLI entry point; exposes `--term`, `--seed-phrase`, `--grammatical-frame`, `--context`, `--goal`, `--contexts-file`, `--max-iterations`, `--threshold`, `--no-human`, `--hint`; orchestrates RL loop → RLHF → JSON save → report generation. |
-| `notebooks/demo.ipynb` | End-to-end demo notebook wiring all modules with narrative markdown cells; runs the full loop on the concept `"fire"` (dismissal frame) with three (context, goal) pairs as a live demo. |
-| `docs/concept-ontology.md` | Shared vocabulary specification: defines concept, instance, simulation, context, goal, functional adequacy, prediction error, construction, and the tokenization/grammar layer in precise terms. Every code file and deliverable is traceable to this document. |
-
-The workflow was **iterative**: Bob generated a first draft of each file, the team reviewed it for
-Barrett-vocabulary alignment, grammatical-frame correctness, and data-model integrity, and Bob
-applied targeted edits in response to feedback. No file was accepted in its first draft without at
-least one review-and-revise cycle. Bob's `apply_diff` and `search_and_replace` tools were used for
-surgical edits rather than wholesale rewrites, keeping each change traceable to a specific review
-comment.
+| `src/concept_population.py` | `ConceptInstance` + `ConceptPopulation` dataclasses; all Barrett-aligned fields; `to_json()` / `from_json()`; computed `score_delta` property |
+| `src/watsonx_client.py` | watsonx.ai API client; `.env` credential loading; `WATSONX_STUB=true` dry-run mode |
+| `src/concept_loop.py` | RL inner loop; grammatical-frame injection into all prompts; multi-iteration refinement; population accumulation |
+| `src/judge.py` | LLM adequacy scorer; context-aware prompt with `seed_phrase` + `grammatical_frame`; numeric response parsing |
+| `src/concept_refiner.py` | Single-step refinement with hint injection; output validation |
+| `src/human_feedback.py` | CLI RLHF collector; full context/goal/frame display; accept/reject/refine routing |
+| `src/report.py` | Concept Population Report renderer; breadth, coverage, score-delta table |
+| `src/main.py` | CLI entry point; full argument surface including `--seed-phrase`, `--grammatical-frame`, `--contexts-file` |
+| `src/generate_corpus.py` | Batch generation over `corpus_spec.json`; 10 construction terms × 5 (context, goal) pairs |
+| `src/export_training_data.py` | Dual-format JSONL exporter: Format A (Judge training) + Format B (Generator training) |
+| `src/launch_tuning_job.py` | watsonx.ai SDK script; uploads JSONL, starts two parallel LoRA fine-tuning jobs |
+| `notebooks/demo.ipynb` | End-to-end demo notebook with narrative markdown cells |
+| `notebooks/construction_benchmark.ipynb` | Three-way evaluation notebook (base / generator-tuned / judge-tuned) |
+| `docs/concept-ontology.md` | Shared vocabulary spec; every code file and deliverable is traceable to this document |
 
 ---
 
-## 4. Bob as Runtime Orchestrator
+### 3. Custom Skills (Bob Skill System)
 
-Bob is not merely the tool that *wrote* the code — Bob *runs* the workflow at runtime.
+Six custom skills were built for this project. All live under `.bob/skills/` in the repo.
 
-When a user wants to build a Concept Population for a new term, the session proceeds entirely
-inside Bob:
-
-1. The user activates the **`rl-feedback-loop`** skill. Bob reads the skill instructions and
-   orchestrates generation + scoring: calling `src/concept_loop.py` logic via the
-   `watsonx-api-caller` skill, presenting scored instances to the user, and growing the population.
-   All prompts include the `seed_phrase` and `grammatical_frame` to anchor the LLM to the correct
-   concept construction.
-
-2. At each checkpoint, the **`rlhf-human-feedback`** skill takes over. Bob presents the instance
-   in its full context/goal/grammatical-frame, prompts the user for an accept / reject / refine
-   signal, and routes the result: accepted instances are committed to the population; rejected or
-   refined instances re-enter the RL loop with the user's hint fed to the
-   `concept-definition-refiner` skill. New instances are appended to the population — the
-   population grows through each feedback round.
-
-3. When the population reaches the adequacy threshold (or the user ends the session), the
-   **`concept-clarity-report`** skill renders the final Concept Population Report as a formatted
-   markdown document, including breadth score, grammatical frame coverage, goal and context tables,
-   and per-instance adequacy deltas.
-
-This design means the **concept-learning loop is a Bob skill pipeline**, not a standalone Python
-script. Bob holds the session state, drives the interaction, and decides when to escalate from
-auto-scoring to human feedback and back.
+| Skill | What it does |
+|---|---|
+| `watsonx-api-caller` | Single entry point for all watsonx.ai LLM calls: prompt structure, auth, parameter defaults, response parsing, error handling |
+| `rl-feedback-loop` | Inner RL loop: generates concept instances per (context, goal) pair, scores for functional adequacy, refines low-scoring instances, grows the ConceptPopulation |
+| `rlhf-human-feedback` | Outer RLHF loop: presents each instance in full context/goal/frame, collects human accept/reject/refine+hint, routes result back into the RL loop or commits to the population |
+| `concept-definition-refiner` | Single-step simulation refinement: injects seed phrase, grammatical frame, and optional hint; produces an improved simulation with rationale |
+| `concept-clarity-report` | Renders the Concept Population Report: breadth, frame coverage, goal/context coverage, per-instance delta table, population verdict |
+| `hackathon-deliverable-writer` | Drafts judge-facing written deliverables; enforces section order, word counts, and Barrett-vocabulary alignment |
 
 ---
 
-## 5. watsonx.ai Integration
+### 4. Bob as Runtime Orchestrator
 
-All LLM calls in the project go through IBM watsonx.ai using the `ibm_watsonx_ai` Python SDK.
+Bob does not just *write* the code — it *runs* the workflow at runtime. A live concept-learning session happens entirely inside Bob chat:
 
-- **`watsonx-api-caller` skill** — activated whenever any code or skill needs to call watsonx.ai.
-  It defines the standard prompt structure, required parameters (`model_id`, `project_id`,
-  `max_new_tokens`, `temperature`, `decoding_method`), response parsing logic, and the error
-  handling pattern. Every module (`src/concept_loop.py`, `src/judge.py`, `src/concept_refiner.py`)
-  follows this single pattern.
+1. User activates **`rl-feedback-loop`**. Bob calls `src/concept_loop.py` logic via `watsonx-api-caller`, generates and scores instances, presents results.
+2. Bob activates **`rlhf-human-feedback`** at each checkpoint. The user accepts, rejects, or provides a hint. Rejected instances re-enter the loop; accepted instances join the population.
+3. When the session ends, Bob activates **`concept-clarity-report`** and renders the full Concept Population Report inline in chat.
 
-- **Credentials management** — `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, and `WATSONX_URL` are
-  stored exclusively in `.env` (never committed; excluded by `.gitignore` and `.bobignore`).
-  An `.env.example` file with placeholder values is committed to the repo for setup guidance.
-
-- **`WATSONX_STUB=true`** — setting this environment variable switches `src/watsonx_client.py`
-  into dry-run mode, returning deterministic stub responses. This allows end-to-end demo runs
-  without consuming API quota or requiring live credentials — used for initial testing.
+The concept-learning loop is a Bob skill pipeline — Bob holds the session state, drives the interaction, and decides when to escalate from auto-scoring to human feedback.
 
 ---
 
-## 6. Session Evidence
+## IBM watsonx.ai
 
-Bob session summary screenshots are committed to `assets/screenshots/`. These capture the
-Plan mode kickoff session (showing the sub-task breakdown and Barrett theoretical framing) and
-the Agent mode coding sessions (showing file generation and iterative code review).
+All LLM inference and fine-tuning in this project runs on IBM watsonx.ai. No other AI provider is used.
 
-See `assets/screenshots/README.md` for a description of each screenshot file.
+### Inference
 
----
+| Model | Role | Used in |
+|---|---|---|
+| `ibm/granite-13b-instruct-v2` | Generator — constructs concept simulations | `src/concept_loop.py`, `src/generate_corpus.py` |
+| `ibm/granite-13b-instruct-v2` | Judge (base) — scores functional adequacy 0–10 | `src/judge.py` |
+| Generator-tuned Granite 3B | Generator (fine-tuned) — domain-specific simulation generation | `notebooks/construction_benchmark.ipynb` |
+| Judge-tuned Granite 3B | Judge (fine-tuned) — domain-specific adequacy scoring | `notebooks/construction_benchmark.ipynb` |
 
-*This document was drafted and updated using the `hackathon-deliverable-writer` Bob skill, following
-the section schema and specificity requirements defined in
-`.bob/skills/hackathon-deliverable-writer/SKILL.md`.*
+All calls go through `src/watsonx_client.py` using the `ibm_watsonx_ai` Python SDK. Credentials (`WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`) are stored in `.env`, never committed. `WATSONX_STUB=true` enables full dry-run mode for demos without consuming quota.
+
+### Fine-Tuning (Tuning Studio)
+
+The self-generated ConceptPopulation corpus (50 labelled `(context, goal, simulation, adequacy_score)` tuples for 10 construction-domain terms) was used as training data for **two parallel LoRA fine-tuning jobs** on watsonx.ai Tuning Studio — both targeting `ibm/granite-3b-code-instruct`, both running on IBM Cloud with no local GPU:
+
+| Job | Training data | What the model learns |
+|---|---|---|
+| **Judge fine-tuning** | Format A JSONL — all accepted instances, full score range | To score functional adequacy accurately in the construction domain |
+| **Generator fine-tuning** | Format B JSONL — only instances with `adequacy_score ≥ 8.0` | To construct goal-indexed concept simulations for construction-domain terms |
+
+Both jobs were launched via `src/launch_tuning_job.py` (watsonx.ai Python SDK). Job IDs and tuned model IDs are recorded in `data/tuning_job_config.json`. Step-by-step reproduction instructions are in `docs/tuning-setup.md`.
+
+The three-way evaluation (base / generator-tuned / judge-tuned) in `notebooks/construction_benchmark.ipynb` calls all three model endpoints on watsonx.ai and computes per-term adequacy deltas — making Barrett's concept-as-population claim **empirically testable** from two independent angles.

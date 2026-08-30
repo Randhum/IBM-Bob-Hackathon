@@ -1,228 +1,357 @@
-# Demo Video Script
+# invideo.ai — Full Video Generation Prompt
 
-**Project:** Optimizing LLM Vocabulary via Concept-Learning Workflow
-**Target duration:** ≤ 3 minutes (180 seconds)
-**Format:** Screen recording with live narration
-
----
-
-## Pre-Recording Checklist
-
-- [ ] Terminal open with `src/` directory in view
-- [ ] `notebooks/demo.ipynb` open in Jupyter and pre-run through Cell 2
-- [ ] Bob session open in a browser tab showing the `rl-feedback-loop` skill ready
-- [ ] `.env` file closed and not visible in any open editor tab
-- [ ] Microphone tested; background noise minimised
-- [ ] Screen resolution set for legibility (1280×720 minimum)
+**Project:** Barrett Concept Construction — Two LLMs on watsonx.ai  
+**Platform:** invideo.ai (AI video generator)  
+**Target runtime:** 120 seconds  
+**Aspect ratio:** 16:9 (1920×1080)  
+**Tone:** Professional tech demo — clear, confident, slightly cinematic  
+**Music mood:** Minimal ambient electronic, low volume, no drops or vocals  
 
 ---
 
-## Segment 1 — Hook & Problem (0:00–0:30)
+## HOW TO USE THIS FILE
 
-**Duration:** 30 seconds
-**Screen:** Title slide or blank Bob chat window (no terminal yet)
-
-### Narration
-
-> "Your brain doesn't store definitions. It stores predictions. When you think of 'anger',
-> you don't recall a dictionary entry — your brain simulates what anger looks, feels, and
-> sounds like in *this specific situation*, toward *this specific goal*.
->
-> Current LLMs do the opposite: they store token statistics. That's the problem we're
-> solving."
-
-### Speaker Notes
-
-- Speak slowly for the first two sentences — this is the conceptual hook for judges.
-- Pause briefly after "toward *this specific goal*" before transitioning to "Current LLMs…"
-- Keep the screen clean here; no need to show code yet.
+1. Go to **invideo.ai → AI Video** (or "Text to Video")
+2. Paste the **Master Prompt** (section below) into the script/prompt box
+3. Select style: **Tech / Corporate / Modern Dark**
+4. Select voice: **English (US), Male, calm & authoritative** — e.g. "James" or "Michael"
+5. Let invideo generate the first draft, then use the per-scene instructions in
+   **Scene Details** to manually adjust individual clips, overlays, and transitions.
 
 ---
 
-## Segment 2 — Barrett Framework (0:30–0:45)
+## MASTER PROMPT
+*(paste this entire block into invideo.ai's prompt or script field)*
 
-**Duration:** 15 seconds
-**Screen:** Bob chat showing the kickoff plan or a prepared slide with the ConceptPopulation
-schema visible
+```
+Create a 120-second professional tech demo video about a software project called
+"Barrett Concept Construction" built with IBM Bob and watsonx.ai.
 
-### Narration
+Tone: confident, clear, slightly cinematic. Dark background theme throughout.
+Music: minimal ambient electronic, low volume, no vocals, fade out at end.
+Voice: calm authoritative male narrator, US English, moderate pace.
 
-> "Lisa Feldman Barrett's constructionist theory tells us a concept is not a fixed
-> definition — it's a *population of variable instances*, each grounded in a context and
-> a goal. We built that missing layer on top of an LLM."
+The video has 6 scenes:
 
-### Speaker Notes
+SCENE 1 (0–10s): HOOK
+Show the word "fire" on a black screen. Then show three phrases appearing one by one:
+"to fire an employee", "fire in a gun", "fire in her eyes".
+Text overlay at the bottom: "Same word. Three different concepts. AI gets it wrong every time."
+Narrator says: "The word fire means three completely different things — and an AI gets it
+wrong every time. Here's why — and how we fixed it."
 
-- Emphasise "population of variable instances" — this is the core theoretical claim.
-- The screen can show the `ConceptPopulation` JSON schema from `src/concept_population.py`
-  or the plan file — either reinforces the data-model vocabulary.
-- This segment is intentionally short; transition quickly into the demo.
+SCENE 2 (10–28s): THE PROBLEM
+Show the word "fire" splitting into two code-style token chips: "fi" and "##re" on a dark
+tech background. Then show a blurred pile of sentence fragments all merging together.
+Text overlay: "Token co-occurrence ≠ Concept"
+Show a flat bar chart labelled "Average meaning — no context, no goal."
+Narrator says: "LLMs don't understand words — they count token fragments. The word fire
+becomes fi plus hash-hash-re. Every use of that token blurs together into one flat
+distribution. The model has no idea what fire means here, toward this goal.
+It's a statistical average — a concept of nothing."
 
----
+SCENE 3 (28–58s): THE SCIENCE — BARRETT'S MODEL
+Split screen. Left side: a human brain icon with three memory cards branching out, each
+card showing a different situation and goal. Right side: code editor showing a Python
+dataclass called ConceptPopulation.
+Animate the three memory cards appearing one by one.
+Show a quote card: "A concept is a population of variable instances — Lisa Feldman Barrett,
+How Emotions Are Made, 2017"
+Then introduce two glowing LLM icons side by side: "Generator LLM (Granite 13B)" in blue
+and "Judge LLM (Granite 3B)" in purple.
+Text overlay: "We built this missing layer for AI."
+Narrator says: "Neuroscientist Lisa Feldman Barrett proved that your brain doesn't store
+definitions — it stores a population of instances, each tied to a specific situation and
+goal. When you hear fire the employee, your brain picks the right memory. We built exactly
+this layer for AI — using two LLMs on watsonx.ai: one to construct simulations, one to
+judge them."
 
-## Segment 3 — Live Demo (0:45–2:30)
+SCENE 4 (58–80s): THE ARCHITECTURE
+Show an animated flow diagram building step by step on a dark background.
+Steps appear in order as narrator speaks:
+1. Input box (yellow): "Seed Phrase + Context + Goal"
+2. Arrow down to Generator LLM box (blue): "Simulation"
+3. Arrow right to Judge LLM box (purple): "Score 0–10 — Functional Adequacy"
+4. Arrow with red label: "score too low → refine and re-score (RL inner loop)"
+5. Arrow down to Human Feedback box (green): "accept / reject / refine with hint"
+6. Arrow right to Concept Population box (gold): "Breadth · Goal Coverage · Frame Coverage"
+Small badge at bottom: "Orchestrated end-to-end by IBM Bob"
+Narrator says: "A Generator LLM constructs a simulation — a specific prediction of
+experience — for a given context and goal. A Judge LLM scores its functional adequacy
+from zero to ten. Too low: refined and scored again. Then a human gives a thumbs-up or a
+hint. Every accepted instance joins the Concept Population."
 
-**Duration:** 105 seconds
-**Screen:** Terminal / Jupyter Notebook / Bob UI — switch between as narrated below
+SCENE 5 (80–110s): LIVE DEMO
+Show a dark terminal window. Text types out line by line as if running live.
+Display these lines appearing sequentially:
+  $ python -m src.main --term "fire" --seed-phrase "to fire someone"
+  Term: fire  |  Seed: "to fire someone"  |  Frame: transitive verb
+  Context: "the manager fired her in front of the team"
+  Goal: "restore power balance"
+  --- Round 0 ---
+  Generating simulation...
+  Simulation: "The manager terminated her contract publicly, asserting authority..."
+  Judge scoring... adequacy_score: 6.2  [below threshold 7.5 — refining]
+  --- Round 1 ---
+  Refining with hint: "focus on social power dynamics and visibility..."
+  Simulation: "By dismissing her publicly, the manager signalled dominance..."
+  Judge scoring... adequacy_score: 8.4  [accepted]
+  Human review: ACCEPTED
+  Instance added to ConceptPopulation.
+  Population breadth: 1  |  Goal coverage: 1/1  |  Frame coverage: 1
+Callout arrows highlight: "6.2 → below threshold" and "8.4 → accepted"
+Narrator says: "Watch it run. Term: fire. Seed phrase: to fire someone. Context: a manager
+dismisses an employee in front of the team. Goal: restore power balance. The Generator
+produces a simulation. The Judge scores it — six point two. Too low. A hint is injected.
+Round two: eight point four. The human accepts. One perfect instance, ready for the
+population."
 
----
-
-### 3a — Setup (0:45–1:00)
-
-**Screen:** Terminal or Notebook Cell 3 showing the seed term and context-goal pairs
-
-#### Narration
-
-> "We start with a term: 'anger'. We give it three context-goal pairs — for example:
-> receiving unfair criticism at work with the goal of restoring social fairness; feeling
-> ignored during a conflict with the goal of being heard; and witnessing injustice with
-> the goal of protecting others."
-
-#### Screen Action Cues
-
-- Show `main.py` being invoked, or Notebook Cell 3 with the three `(context, goal)` pairs
-  visible.
-- Scroll slowly so the three pairs are all readable.
-
----
-
-### 3b — Simulation Generation (1:00–1:20)
-
-**Screen:** Terminal output showing watsonx.ai generating candidate simulations, or Bob
-running the `rl-feedback-loop` skill
-
-#### Narration
-
-> "Bob's `rl-feedback-loop` skill generates an initial simulation for each pair — a
-> predicted experience of anger that is specific to that context and that goal."
-
-#### Screen Action Cues
-
-- Show the skill activation in Bob, or the terminal output with three simulation strings
-  appearing.
-- If running from notebook, show Cell 4 output appearing line by line.
-
----
-
-### 3c — Adequacy Scoring (1:20–1:40)
-
-**Screen:** Terminal or notebook output showing numerical adequacy scores per instance
-
-#### Narration
-
-> "The judge LLM scores each simulation for functional adequacy in context. A score of
-> eight or above means the simulation is predictively useful for that goal in that
-> situation."
-
-#### Screen Action Cues
-
-- Highlight the score column in the output table (e.g. `adequacy_score: 6.5`).
-- If one score is below threshold, pause on it briefly to set up the next segment.
-
----
-
-### 3d — Refinement (1:40–2:00)
-
-**Screen:** Terminal or Bob showing the `concept-definition-refiner` skill in action
-
-#### Narration
-
-> "Low-scoring instances are refined by the `concept-definition-refiner` skill — the LLM
-> receives the original simulation plus its score and a refinement rationale, and produces
-> an improved version."
-
-#### Screen Action Cues
-
-- Show the before/after simulation text side by side, or the refinement output with the
-  rationale paragraph visible.
-- Scroll to show the score improving from round 0 to round 1.
-
----
-
-### 3e — Human RLHF (2:00–2:15)
-
-**Screen:** CLI prompt from `human_feedback.py` or Bob RLHF display
-
-#### Narration
-
-> "After auto-scoring, we collect human feedback on contextual fit. The reviewer sees the
-> full context and goal alongside the simulation — then accepts, rejects, or provides a
-> refinement hint."
-
-#### Screen Action Cues
-
-- Show the RLHF prompt: term, context, goal, simulation, adequacy score, and the
-  accept/reject/refine menu.
-- Demonstrate selecting "accept" for one instance.
+SCENE 6 (110–120s): CLOSING
+Dark background. Show three elements centred, fading in one by one:
+Line 1: "Generator LLM  +  Judge LLM  =  Concept Population"
+Line 2 (smaller, grey): "Not token averages. Goal-indexed, context-grounded instances."
+Line 3: IBM Bob logo badge (blue) and watsonx.ai badge (purple) side by side.
+Line 4 (small, monospace): "github.com/your-org/barrett-concept-construction"
+Narrator says: "Two LLMs. One theory. A population of concepts — not averages.
+Built with IBM Bob and watsonx.ai."
+Fade music out. Hold last frame for 3 seconds.
+```
 
 ---
 
-### 3f — Population Growth (2:15–2:30)
+## SCENE-BY-SCENE INVIDEO EDITOR INSTRUCTIONS
 
-**Screen:** The growing ConceptPopulation JSON or the formatted population table
-
-#### Narration
-
-> "The population grows — we never replace instances, we add them. Each accepted instance
-> expands the concept's coverage across contexts and goals, just as Barrett describes."
-
-#### Screen Action Cues
-
-- Show the `ConceptPopulation` JSON with two or three instances, each with a distinct
-  `context` and `goal` field.
-- Briefly show `population_breadth` incrementing.
+Use these after the AI generates the first draft to fine-tune individual scenes.
 
 ---
 
-## Segment 4 — Report & Closing (2:30–3:00)
+### Scene 1 — Hook (0–10 s)
 
-**Duration:** 30 seconds
-**Screen:** `report.py` output or `notebooks/demo.ipynb` final cell showing the Concept
-Population Report markdown
+| Setting | Value |
+|---|---|
+| Background | Pure black (`#000000`) |
+| Stock footage | None — text only |
+| Font | Large, white, bold sans-serif, centred |
+| Animation | Each phrase fades in and slides up, 0.8 s apart |
+| Transition out | Slow fade to Scene 2 |
 
-### Narration
+**On-screen text sequence:**
+1. `"to fire an employee"` — white
+2. `"to fire a gun"` — white
+3. `"fire in her eyes"` — white, word **fire** in `#e07b1e` (amber)
+4. Subtitle fade-in: `Same word. Three different concepts.` — grey, smaller
 
-> "Finally, the Concept Population Report shows us population breadth, goal and context
-> coverage, and per-instance adequacy improvements.
->
-> This is Barrett's concept-as-population made operational — a proof-of-concept that LLM
-> vocabulary can be improved without weight retraining, using Bob as the orchestrator."
-
-### Screen Action Cues
-
-- Show the full report: header (term, breadth, coverage counts), the per-instance table
-  with round-0 vs final scores, and the verdict line.
-- End on the Bob UI or repo README to close with the project name on screen.
-
-### Speaker Notes
-
-- The closing line "without weight retraining, using Bob as the orchestrator" is the key
-  differentiator for judges — say it clearly and let it land before cutting.
-- No need to rush; this segment has slack time.
+**Voiceover (exact):**
+> "The word fire means three completely different things — and an AI gets it wrong every time. Here's why — and how we fixed it."
 
 ---
 
-## Timing Summary
+### Scene 2 — The Problem (10–28 s)
 
-| Segment | Time | Duration | Key Point |
-|---------|------|----------|-----------|
-| 1 — Hook & Problem | 0:00–0:30 | 30 sec | Brain predicts; LLMs store statistics |
-| 2 — Barrett Framework | 0:30–0:45 | 15 sec | Concept = population of instances |
-| 3a — Setup | 0:45–1:00 | 15 sec | Term + 3 context-goal pairs |
-| 3b — Simulation | 1:00–1:20 | 20 sec | watsonx.ai generates instances |
-| 3c — Scoring | 1:20–1:40 | 20 sec | Judge LLM rates adequacy |
-| 3d — Refinement | 1:40–2:00 | 20 sec | Low scores → refiner skill |
-| 3e — RLHF | 2:00–2:15 | 15 sec | Human accept/reject/refine |
-| 3f — Population | 2:15–2:30 | 15 sec | Population grows, never replaces |
-| 4 — Report & Close | 2:30–3:00 | 30 sec | Concept Population Report + wrap |
+| Setting | Value |
+|---|---|
+| Background | Very dark navy (`#0d0d18`) |
+| Stock footage | Abstract data/network particles or circuit board (dark) |
+| Overlay opacity | 20% — background should stay dark |
+| Transition out | Quick cut to Scene 3 |
 
-**Total: 3:00 exactly.** Cut 5–10 seconds from Segment 3b or 3c if the live demo runs long.
+**On-screen text sequence:**
+1. Large word `fire` in amber — centre screen
+2. Arrow down: `LLM tokenises ↓`
+3. Two code chips side by side: `fi` (blue) and `##re` (purple)
+4. Small text block below: `"to fire someone" · "campfire" · "fired up" · "firing range"` — blurred / faded
+5. Bold verdict bar: `Token averaging ≠ Concept construction` — red border, red text
+
+**Voiceover (exact):**
+> "LLMs don't understand words — they count token fragments. The word fire becomes fi plus double-hash-re. Every use of that token blurs together into one flat distribution. The model has no idea what fire means here, toward this goal. It's a statistical average — a concept of nothing."
 
 ---
 
-## Post-Recording
+### Scene 3 — Barrett's Model (28–58 s)
 
-1. Trim the recording to ≤ 3:00.
-2. Upload to YouTube (unlisted) or Loom; verify public access.
-3. Add the URL to `docs/video-url.md` and `README.md`.
-4. Commit both files.
+| Setting | Value |
+|---|---|
+| Background | Dark blue-black (`#0a0f1a`) |
+| Stock footage | Neuroscience / brain scan or abstract neural network — left half |
+| Right half | Code / Python editor screenshot |
+| Transition out | Crossfade to Scene 4 |
+
+**On-screen text sequence:**
+1. Left panel title: `Your brain stores a population` — small caps, grey
+2. Three memory cards animate in (left side):
+   - Card 1: **Context:** manager + employee · **Goal:** restore power balance
+   - Card 2: **Context:** weapons range · **Goal:** discharge safely
+   - Card 3: **Context:** emotional intensity · **Goal:** signal passion
+3. Quote card (full width): *"A concept is not a definition — it is a population of variable instances, each anchored to a context and a goal."* — italic, purple left border · Attribution: Barrett, 2017
+4. Right panel: Two LLM badges appear:
+   - `Generator LLM · Granite 13B Instruct` — blue badge
+   - `Judge LLM · Granite 3B (fine-tuned)` — purple badge
+5. Overlay text: `We built this missing layer for AI.`
+
+**Voiceover (exact):**
+> "Neuroscientist Lisa Feldman Barrett proved that your brain doesn't store definitions — it stores a population of instances, each tied to a specific situation and goal. When you hear 'fire the employee', your brain picks the right memory. We built exactly this layer for AI — using two LLMs on watsonx.ai: one to construct simulations, one to judge them."
+
+---
+
+### Scene 4 — Architecture (58–80 s)
+
+| Setting | Value |
+|---|---|
+| Background | Very dark green-black (`#0a0f0a`) |
+| Stock footage | None — diagram only |
+| Animation | Each node and arrow builds in as narrator speaks, 1 s delays |
+| Transition out | Cut to Scene 5 |
+
+**Flow diagram nodes (build in order):**
+
+```
+[Seed Phrase + Context + Goal]  ← yellow box
+          ↓
+  [Generator LLM · Simulation]  ← blue box
+          →
+  [Judge LLM · Score 0–10]     ← purple box
+          ↓
+  score < threshold → REFINE    ← red annotation
+          ↓
+  [Human Feedback: ✓/✗/hint]   ← green box
+          →
+  [Concept Population]          ← gold box
+```
+
+**Badge at bottom:** `Orchestrated end-to-end by IBM Bob` — blue pill
+
+**Voiceover (exact):**
+> "A Generator LLM constructs a simulation — a specific prediction of experience — for a given context and goal. A Judge LLM scores its functional adequacy from zero to ten. Too low: refined and scored again. Then a human gives a thumbs-up or a hint. Every accepted instance joins the Concept Population."
+
+---
+
+### Scene 5 — Live Demo (80–110 s)
+
+| Setting | Value |
+|---|---|
+| Background | Terminal dark (`#0d1117`) — GitHub-style dark theme |
+| Stock footage | None — terminal text only |
+| Font | Monospace, white/green on dark, 15 pt |
+| Animation | Lines type in one at a time, ~0.5 s between lines |
+| Callout arrows | Highlight `6.2` (red) and `8.4` (green) with animated arrows |
+| Transition out | Slow fade to Scene 6 |
+
+**Terminal text to display (type-in animation, line by line):**
+
+```
+$ python -m src.main --term "fire" \
+    --seed-phrase "to fire someone" \
+    --grammatical-frame "transitive verb, agent=manager, patient=employee" \
+    --context "the manager fired her in front of the team" \
+    --goal "restore power balance" \
+    --max-iterations 3 --threshold 7.5
+
+Term         : fire
+Seed phrase  : to fire someone
+Frame        : transitive verb, agent=manager, patient=employee
+Context      : the manager fired her in front of the team
+Goal         : restore power balance
+
+──── Round 0 ────────────────────────────────────────────
+Generating simulation via watsonx.ai (Granite 13B)...
+Simulation : "The manager terminated her contract publicly,
+             asserting authority over the team dynamic..."
+Judge score: 6.2  ◀ below threshold (7.5) — refining
+
+──── Round 1 ────────────────────────────────────────────
+Refining simulation with hint: focus on social power dynamics...
+Simulation : "By dismissing her in front of colleagues, the
+             manager publicly reasserted dominance, restoring
+             the chain of command visibly..."
+Judge score: 8.4  ✓ accepted
+
+Human review: ACCEPTED
+Instance added to ConceptPopulation.
+Population breadth : 1   Goal coverage : 1/1   Frame coverage : 1
+Report written → docs/concept_population_report.md
+```
+
+**Callout overlays:**
+- Red arrow + label on `6.2`: `"Below threshold — RL refines"`
+- Green arrow + label on `8.4`: `"Accepted — joins population"`
+
+**Voiceover (exact):**
+> "Watch it run. Term: fire. Seed phrase: to fire someone. Context: a manager dismisses an employee in front of the team. Goal: restore power balance. The Generator produces a simulation. The Judge scores it — six point two. Too low. A hint is injected. Round two: eight point four. The human accepts. One perfect instance, ready for the population."
+
+---
+
+### Scene 6 — Closing (110–120 s)
+
+| Setting | Value |
+|---|---|
+| Background | Near-black (`#08080f`) |
+| Stock footage | None — text and badges only |
+| Animation | Each element fades up with 0.6 s delay between |
+| Music | Fade to silence over last 5 s |
+| Hold | Freeze final frame for 3 s before end |
+
+**On-screen text sequence:**
+1. `Generator LLM  +  Judge LLM  =  Concept Population`
+   — Generator in blue `#60a5fa`, Judge in purple `#c084fc`, result in gold `#fcd34d`
+2. Subtitle (grey, smaller): `Not token averages. Goal-indexed, context-grounded instances.`
+3. Two badges side by side: `IBM Bob` (blue) · `watsonx.ai` (purple)
+4. Repo line (small monospace, dim): `github.com/your-org/barrett-concept-construction`
+
+**Voiceover (exact):**
+> "Two LLMs. One theory. A population of concepts — not averages. Built with IBM Bob and watsonx.ai."
+
+---
+
+## FULL NARRATION — CLEAN READ-ALOUD VERSION
+
+*Copy this into invideo.ai's voiceover text field if using its built-in TTS:*
+
+Scene 1: The word fire means three completely different things — and an AI gets it wrong every time. Here's why — and how we fixed it.
+
+Scene 2: LLMs don't understand words — they count token fragments. The word fire becomes fi plus double-hash-re. Every use of that token blurs together into one flat distribution. The model has no idea what fire means here, toward this goal. It's a statistical average — a concept of nothing.
+
+Scene 3: Neuroscientist Lisa Feldman Barrett proved that your brain doesn't store definitions — it stores a population of instances, each tied to a specific situation and goal. When you hear fire the employee, your brain picks the right memory. We built exactly this layer for AI — using two LLMs on watsonx.ai: one to construct simulations, one to judge them.
+
+Scene 4: A Generator LLM constructs a simulation — a specific prediction of experience — for a given context and goal. A Judge LLM scores its functional adequacy from zero to ten. Too low: refined and scored again. Then a human gives a thumbs-up or a hint. Every accepted instance joins the Concept Population.
+
+Scene 5: Watch it run. Term: fire. Seed phrase: to fire someone. Context: a manager dismisses an employee in front of the team. Goal: restore power balance. The Generator produces a simulation. The Judge scores it — six point two. Too low. A hint is injected. Round two: eight point four. The human accepts. One perfect instance, ready for the population.
+
+Scene 6: Two LLMs. One theory. A population of concepts — not averages. Built with IBM Bob and watsonx.ai.
+
+---
+
+## TIMING SUMMARY
+
+| Scene | Time | Duration | Voiceover words |
+|---|---|---|---|
+| 1 — Hook | 0–10 s | 10 s | 25 |
+| 2 — Problem | 10–28 s | 18 s | 50 |
+| 3 — Barrett | 28–58 s | 30 s | 60 |
+| 4 — Architecture | 58–80 s | 22 s | 55 |
+| 5 — Live Demo | 80–110 s | 30 s | 70 |
+| 6 — Closing | 110–120 s | 10 s | 18 |
+| **Total** | | **120 s** | **~278 words** |
+
+Narration pace: ~140 words/min. Remaining time in each scene is visual animation.
+
+---
+
+## STOCK MEDIA KEYWORDS (for invideo.ai media search)
+
+| Scene | Search terms |
+|---|---|
+| 2 | `data network dark`, `neural network abstract`, `circuit board dark background` |
+| 3 | `human brain neurons`, `memory recall abstract`, `cognitive science visualization` |
+| 4 | `workflow diagram`, `AI pipeline`, `system architecture dark` |
+| 5 | `terminal coding dark`, `developer typing`, `code screen night` |
+
+---
+
+## POST-GENERATION CHECKLIST
+
+- [ ] Replace `github.com/your-org/barrett-concept-construction` with real repo URL in Scene 6
+- [ ] Review auto-selected stock clips — replace any that show chatbots or generic "AI robot" imagery
+- [ ] Check TTS pronunciation of: `Granite` (GRAN-ite), `Barrett` (BARE-ett), `watsonx` (watson-ex)
+- [ ] Verify terminal font in Scene 5 is monospace and readable at full screen
+- [ ] Export at 1920×1080, H.264, for YouTube upload
+- [ ] Upload as unlisted YouTube video and paste URL into `docs/video-url.md`

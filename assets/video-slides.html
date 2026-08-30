@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barrett Concept Construction — watsonx.ai</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0f;
+  color: #f0f0f0;
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Slide container ── */
+#deck {
+  width: 1280px; height: 720px;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 80px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+/* ── Scene label ── */
+.scene-label {
+  position: absolute; top: 28px; right: 36px;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── Progress bar ── */
+#progress {
+  position: absolute; bottom: 0; left: 0;
+  height: 3px; background: #3b82d4;
+  transition: width 0.4s ease;
+}
+
+/* ── Nav hint ── */
+#nav-hint {
+  position: absolute; bottom: 18px; right: 28px;
+  font-size: 11px; color: rgba(255,255,255,0.25);
+  letter-spacing: .06em;
+}
+
+/* ══════════════════════════════════════════
+   SCENE 1 — Hook
+══════════════════════════════════════════ */
+#s1 { background: #0a0a0f; }
+
+.phrase-stack {
+  display: flex; flex-direction: column; gap: 22px;
+  text-align: center;
+}
+.phrase {
+  font-size: 44px; font-weight: 700; letter-spacing: -.01em;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.phrase.show { opacity: 1; transform: translateY(0); }
+.phrase em { color: #e07b1e; font-style: normal; }
+
+.s1-subtitle {
+  margin-top: 48px; font-size: 16px; color: rgba(255,255,255,0.4);
+  letter-spacing: .04em; text-transform: uppercase;
+  opacity: 0; transition: opacity 0.6s ease 0.2s;
+}
+.s1-subtitle.show { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   SCENE 2 — Token Problem
+══════════════════════════════════════════ */
+#s2 { background: #0d0d18; }
+
+.token-demo {
+  display: flex; flex-direction: column; align-items: center; gap: 36px;
+  width: 100%;
+}
+.word-big {
+  font-size: 72px; font-weight: 800; color: #e07b1e;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.word-big.show { opacity: 1; }
+
+.arrow-row {
+  font-size: 28px; color: rgba(255,255,255,0.3);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.arrow-row.show { opacity: 1; }
+
+.token-row {
+  display: flex; gap: 16px;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.token-row.show { opacity: 1; }
+.token-chip {
+  padding: 8px 22px; border-radius: 6px;
+  font-size: 26px; font-weight: 700; font-family: 'Courier New', monospace;
+}
+.tc-blue { background: #1a2e4a; color: #60a5fa; border: 1px solid #2d4a6e; }
+.tc-purple { background: #261a3d; color: #c084fc; border: 1px solid #4a2d6e; }
+
+.blur-heap {
+  font-size: 13px; color: rgba(255,255,255,0.4); text-align: center;
+  line-height: 1.8; max-width: 680px;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.blur-heap.show { opacity: 1; }
+
+.verdict {
+  font-size: 22px; font-weight: 600; color: #f87171;
+  border: 1px solid #4a1a1a; background: rgba(248,113,113,0.08);
+  padding: 12px 32px; border-radius: 8px;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.verdict.show { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   SCENE 3 — Barrett
+══════════════════════════════════════════ */
+#s3 { background: #0a0f1a; }
+
+.barrett-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+  width: 100%; align-items: start;
+}
+
+.brain-side {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.brain-title {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
+  color: rgba(255,255,255,0.35); margin-bottom: 4px;
+}
+.memory-card {
+  background: #111827; border: 1px solid #1f2d40;
+  border-radius: 8px; padding: 14px 18px;
+  opacity: 0; transform: translateX(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.memory-card.show { opacity: 1; transform: translateX(0); }
+.mc-context { font-size: 11px; color: #60a5fa; text-transform: uppercase; letter-spacing: .06em; }
+.mc-goal { font-size: 11px; color: #a78bfa; margin-top: 2px; }
+.mc-sim { font-size: 13px; color: #d1d5db; margin-top: 6px; line-height: 1.5; }
+
+.quote-block {
+  margin-top: 24px;
+  border-left: 3px solid #a78bfa; padding: 10px 16px;
+  font-size: 14px; font-style: italic; color: rgba(255,255,255,0.65);
+  opacity: 0; transition: opacity 0.5s ease;
+  line-height: 1.6;
+}
+.quote-block.show { opacity: 1; }
+.quote-attr { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; font-style: normal; }
+
+.llm-side {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.llm-card {
+  border-radius: 10px; padding: 18px 22px;
+  opacity: 0; transform: translateX(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.llm-card.show { opacity: 1; transform: translateX(0); }
+.llm-gen { background: #0f1f33; border: 1px solid #2d4a6e; }
+.llm-judge { background: #1a1333; border: 1px solid #4a2d6e; }
+.llm-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+.llm-gen .llm-label { color: #60a5fa; }
+.llm-judge .llm-label { color: #c084fc; }
+.llm-name { font-size: 18px; font-weight: 700; }
+.llm-gen .llm-name { color: #93c5fd; }
+.llm-judge .llm-name { color: #d8b4fe; }
+.llm-role { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+/* ══════════════════════════════════════════
+   SCENE 4 — Architecture
+══════════════════════════════════════════ */
+#s4 { background: #0a0f0a; }
+
+.arch-title {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
+  color: rgba(255,255,255,0.35); margin-bottom: 32px;
+}
+.flow {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  width: 100%;
+}
+.flow-row {
+  display: flex; align-items: center; gap: 0; width: 100%;
+  justify-content: center;
+}
+.flow-node {
+  padding: 12px 22px; border-radius: 8px; text-align: center;
+  min-width: 180px;
+  opacity: 0; transform: scale(0.9);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.flow-node.show { opacity: 1; transform: scale(1); }
+.fn-input { background: #1c1c0a; border: 1px solid #3d3d00; color: #fde68a; }
+.fn-gen { background: #0f1f33; border: 1px solid #2d4a6e; color: #93c5fd; }
+.fn-judge { background: #1a1333; border: 1px solid #4a2d6e; color: #d8b4fe; }
+.fn-human { background: #0a1f0a; border: 1px solid #1a4a1a; color: #86efac; }
+.fn-pop { background: #1f1a0a; border: 1px solid #4a3a00; color: #fcd34d; }
+.fn-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .6; }
+.fn-name { font-size: 14px; font-weight: 700; margin-top: 3px; }
+.fn-sub { font-size: 11px; opacity: .55; margin-top: 2px; }
+
+.flow-arrow {
+  font-size: 20px; color: rgba(255,255,255,0.2); margin: 0 8px;
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.flow-arrow.show { opacity: 1; }
+.flow-arrow-down {
+  font-size: 20px; color: rgba(255,255,255,0.2);
+  margin: 4px 0;
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.flow-arrow-down.show { opacity: 1; }
+
+.refine-note {
+  font-size: 12px; color: #f87171; margin-top: 2px;
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.refine-note.show { opacity: 1; }
+
+.bob-badge {
+  margin-top: 28px; padding: 8px 20px; border-radius: 20px;
+  background: rgba(59,130,212,0.12); border: 1px solid #2d4a6e;
+  font-size: 12px; color: #60a5fa;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.bob-badge.show { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   SCENE 6 — Close
+══════════════════════════════════════════ */
+#s6 { background: #08080f; }
+
+.close-equation {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  justify-content: center; margin-bottom: 40px;
+}
+.eq-part {
+  text-align: center;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.eq-part.show { opacity: 1; transform: translateY(0); }
+.eq-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .4; }
+.eq-name { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.eq-gen { color: #60a5fa; }
+.eq-judge { color: #c084fc; }
+.eq-result { color: #fcd34d; }
+.eq-op {
+  font-size: 32px; color: rgba(255,255,255,0.2);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.eq-op.show { opacity: 1; }
+
+.logos {
+  display: flex; align-items: center; gap: 32px; margin-top: 16px;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.logos.show { opacity: 1; }
+.logo-pill {
+  padding: 10px 24px; border-radius: 8px;
+  font-weight: 700; font-size: 15px;
+  border: 1px solid;
+}
+.logo-bob { background: rgba(59,130,212,0.12); color: #60a5fa; border-color: #2d4a6e; }
+.logo-wx { background: rgba(124,92,216,0.12); color: #c084fc; border-color: #4a2d6e; }
+
+.github-url {
+  margin-top: 28px; font-size: 13px; color: rgba(255,255,255,0.35);
+  font-family: 'Courier New', monospace;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.github-url.show { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   Shared utils
+══════════════════════════════════════════ */
+.slide-heading {
+  font-size: 40px; font-weight: 800; text-align: center;
+  line-height: 1.15; margin-bottom: 12px;
+}
+.slide-sub {
+  font-size: 16px; color: rgba(255,255,255,0.45); text-align: center;
+  margin-bottom: 40px;
+}
+
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ── SCENE 1 — Hook ── -->
+  <div class="slide active" id="s1">
+    <div class="scene-label">Scene 1 · 0–10 s</div>
+    <div class="phrase-stack">
+      <div class="phrase" id="p1">"to <em>fire</em> an employee"</div>
+      <div class="phrase" id="p2">"to <em>fire</em> a gun"</div>
+      <div class="phrase" id="p3">"<em>fire</em> in her eyes"</div>
+    </div>
+    <div class="s1-subtitle" id="p4">Same word — three different concepts</div>
+  </div>
+
+  <!-- ── SCENE 2 — Problem ── -->
+  <div class="slide" id="s2">
+    <div class="scene-label">Scene 2 · 10–28 s</div>
+    <div class="token-demo">
+      <div class="word-big" id="t-word">fire</div>
+      <div class="arrow-row" id="t-arrow">LLM tokenises ↓</div>
+      <div class="token-row" id="t-tokens">
+        <div class="token-chip tc-blue">fi</div>
+        <div class="token-chip tc-purple">##re</div>
+      </div>
+      <div class="blur-heap" id="t-heap">
+        "to fire someone" · "campfire" · "fired up" · "firing range"<br>
+        All collapse into the same token weights.<br>
+        <strong style="color:rgba(255,255,255,0.6)">No context. No goal. No concept.</strong>
+      </div>
+      <div class="verdict" id="t-verdict">Token averaging ≠ Concept construction</div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 3 — Barrett ── -->
+  <div class="slide" id="s3">
+    <div class="scene-label">Scene 3 · 28–58 s</div>
+    <div class="barrett-layout">
+      <div class="brain-side">
+        <div class="brain-title">Your brain stores a population</div>
+
+        <div class="memory-card" id="mc1">
+          <div class="mc-context">Context: manager + employee</div>
+          <div class="mc-goal">Goal: restore power balance</div>
+          <div class="mc-sim">"The manager terminated her contract in front of the team…"</div>
+        </div>
+        <div class="memory-card" id="mc2">
+          <div class="mc-context">Context: weapons range</div>
+          <div class="mc-goal">Goal: discharge safely</div>
+          <div class="mc-sim">"She squeezed the trigger, releasing the round downrange…"</div>
+        </div>
+        <div class="memory-card" id="mc3">
+          <div class="mc-context">Context: emotional intensity</div>
+          <div class="mc-goal">Goal: signal passion</div>
+          <div class="mc-sim">"An unmistakable intensity blazed in her expression…"</div>
+        </div>
+
+        <div class="quote-block" id="barrett-quote">
+          "A concept is not a definition — it is a population of variable instances,
+          each anchored to a context and a goal."
+          <div class="quote-attr">— Lisa Feldman Barrett, How Emotions Are Made, 2017</div>
+        </div>
+      </div>
+
+      <div class="llm-side">
+        <div class="brain-title">This system builds the same layer for AI</div>
+
+        <div class="llm-card llm-gen" id="llm-gen">
+          <div class="llm-label">Generator LLM</div>
+          <div class="llm-name">Granite 13B Instruct</div>
+          <div class="llm-role">Constructs goal-indexed simulations<br>for each (context, goal) pair</div>
+        </div>
+
+        <div class="llm-card llm-judge" id="llm-judge">
+          <div class="llm-label">Judge LLM</div>
+          <div class="llm-name">Granite 3B (fine-tuned)</div>
+          <div class="llm-role">Scores functional adequacy 0–10<br>"Does this simulation serve the goal?"</div>
+        </div>
+
+        <div class="quote-block show" style="margin-top:8px; border-color: #fcd34d;">
+          <span style="color:#fde68a; font-style:normal; font-size:13px; font-weight:600;">
+            ConceptPopulation
+          </span><br>
+          <span style="font-size:12px; color:rgba(255,255,255,0.5);">
+            term · seed_phrase · grammatical_frame<br>
+            → N instances, each with context + goal + simulation + score
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 4 — Architecture ── -->
+  <div class="slide" id="s4">
+    <div class="scene-label">Scene 4 · 58–80 s</div>
+    <div class="arch-title">Two LLMs · One Human · Barrett's Loop</div>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="flow-node fn-input" id="fn0">
+          <div class="fn-label">Input</div>
+          <div class="fn-name">Seed Phrase + Context + Goal</div>
+          <div class="fn-sub">"to fire someone" · transitive verb frame</div>
+        </div>
+      </div>
+
+      <div class="flow-arrow-down show">↓</div>
+
+      <div class="flow-row">
+        <div class="flow-node fn-gen" id="fn1">
+          <div class="fn-label">Generator LLM</div>
+          <div class="fn-name">Simulation</div>
+          <div class="fn-sub">watsonx.ai · Granite 13B</div>
+        </div>
+        <div class="flow-arrow" id="fa1">→</div>
+        <div class="flow-node fn-judge" id="fn2">
+          <div class="fn-label">Judge LLM</div>
+          <div class="fn-name">Score 0–10</div>
+          <div class="fn-sub">Functional Adequacy</div>
+        </div>
+      </div>
+
+      <div class="flow-arrow-down" id="fa-down1">↓</div>
+
+      <div class="refine-note" id="refine-note">score &lt; threshold → refine + re-score (RL inner loop)</div>
+
+      <div class="flow-arrow-down" id="fa-down2">↓</div>
+
+      <div class="flow-row">
+        <div class="flow-node fn-human" id="fn3">
+          <div class="fn-label">RLHF</div>
+          <div class="fn-name">Human Feedback</div>
+          <div class="fn-sub">accept / reject / refine + hint</div>
+        </div>
+        <div class="flow-arrow" id="fa2">→</div>
+        <div class="flow-node fn-pop" id="fn4">
+          <div class="fn-label">Output</div>
+          <div class="fn-name">Concept Population</div>
+          <div class="fn-sub">breadth · goal coverage · frame coverage</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bob-badge" id="bob-badge">Orchestrated end-to-end by IBM Bob</div>
+  </div>
+
+  <!-- ── SCENE 6 — Close ── -->
+  <div class="slide" id="s6">
+    <div class="scene-label">Scene 6 · 110–120 s</div>
+
+    <div class="close-equation">
+      <div class="eq-part" id="eq1">
+        <div class="eq-label">Generator LLM</div>
+        <div class="eq-name eq-gen">Granite 13B</div>
+      </div>
+      <div class="eq-op" id="eqop1">+</div>
+      <div class="eq-part" id="eq2">
+        <div class="eq-label">Judge LLM</div>
+        <div class="eq-name eq-judge">Granite 3B</div>
+      </div>
+      <div class="eq-op" id="eqop2">=</div>
+      <div class="eq-part" id="eq3">
+        <div class="eq-label">Output</div>
+        <div class="eq-name eq-result">Concept Population</div>
+      </div>
+    </div>
+
+    <div style="font-size:15px; color:rgba(255,255,255,0.4); text-align:center; margin-bottom:28px;
+                opacity:0; transition:opacity 0.5s ease;" id="close-sub">
+      Not token averages. Goal-indexed, context-grounded instances.<br>
+      Barrett's framework — made runnable.
+    </div>
+
+    <div class="logos" id="close-logos">
+      <div class="logo-pill logo-bob">IBM Bob</div>
+      <div class="logo-pill logo-wx">watsonx.ai</div>
+    </div>
+
+    <div class="github-url" id="close-gh">github.com/your-org/barrett-concept-construction</div>
+  </div>
+
+  <div id="progress" style="width:20%"></div>
+  <div id="nav-hint">SPACE or → to advance</div>
+</div>
+
+<script>
+  const slides = ['s1','s2','s3','s4','s6'];
+  let current = 0;
+
+  // ── Per-slide animation sequences ──
+  const animations = {
+    s1: () => {
+      setTimeout(() => show('p1'), 200);
+      setTimeout(() => show('p2'), 1200);
+      setTimeout(() => show('p3'), 2200);
+      setTimeout(() => show('p4'), 3200);
+    },
+    s2: () => {
+      setTimeout(() => show('t-word'), 200);
+      setTimeout(() => show('t-arrow'), 900);
+      setTimeout(() => show('t-tokens'), 1600);
+      setTimeout(() => show('t-heap'), 2500);
+      setTimeout(() => show('t-verdict'), 3600);
+    },
+    s3: () => {
+      setTimeout(() => show('mc1'), 300);
+      setTimeout(() => show('mc2'), 900);
+      setTimeout(() => show('mc3'), 1500);
+      setTimeout(() => show('barrett-quote'), 2200);
+      setTimeout(() => show('llm-gen'), 2800);
+      setTimeout(() => show('llm-judge'), 3500);
+    },
+    s4: () => {
+      setTimeout(() => show('fn0'), 200);
+      setTimeout(() => show('fn1'), 900);
+      setTimeout(() => show('fa1'), 1300);
+      setTimeout(() => show('fn2'), 1400);
+      setTimeout(() => show('fa-down1'), 2000);
+      setTimeout(() => show('refine-note'), 2200);
+      setTimeout(() => show('fa-down2'), 2800);
+      setTimeout(() => show('fn3'), 3000);
+      setTimeout(() => show('fa2'), 3400);
+      setTimeout(() => show('fn4'), 3500);
+      setTimeout(() => show('bob-badge'), 4200);
+    },
+    s6: () => {
+      setTimeout(() => show('eq1'), 200);
+      setTimeout(() => show('eqop1'), 700);
+      setTimeout(() => show('eq2'), 900);
+      setTimeout(() => show('eqop2'), 1400);
+      setTimeout(() => show('eq3'), 1600);
+      setTimeout(() => { document.getElementById('close-sub').style.opacity = '1'; }, 2400);
+      setTimeout(() => show('close-logos'), 3200);
+      setTimeout(() => show('close-gh'), 4000);
+    }
+  };
+
+  function show(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('show');
+    // for opacity-only elements (not using .show class)
+    if (el.style.opacity !== undefined && !el.classList.contains('show')) {
+      el.style.opacity = '1';
+    }
+  }
+
+  function resetSlide(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // remove .show from all animated children
+    el.querySelectorAll('.show').forEach(c => c.classList.remove('show'));
+    // reset inline opacity transitions
+    ['close-sub'].forEach(cid => {
+      const c = document.getElementById(cid);
+      if (c) c.style.opacity = '0';
+    });
+  }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= slides.length) return;
+    const prev = document.getElementById(slides[current]);
+    prev.classList.remove('active');
+    resetSlide(slides[current]);
+    current = idx;
+    const next = document.getElementById(slides[current]);
+    next.classList.add('active');
+    document.getElementById('progress').style.width = ((current + 1) / slides.length * 100) + '%';
+    if (animations[slides[current]]) animations[slides[current]]();
+  }
+
+  // Trigger first slide animations on load
+  window.addEventListener('load', () => {
+    document.getElementById('progress').style.width = '20%';
+    if (animations[slides[current]]) animations[slides[current]]();
+  });
+
+  // Keyboard + click navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+  });
+  document.getElementById('deck').addEventListener('click', () => goTo(current + 1));
+</script>
+</body>
+</html>

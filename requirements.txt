@@ -1,4 +1,4 @@
-ibm-watsonx-ai>=1.1.0
+ibm-watsonx-ai>=1.4.11
 python-dotenv>=1.0.0
 rich>=13.0.0
 dataclasses-json>=0.6.0

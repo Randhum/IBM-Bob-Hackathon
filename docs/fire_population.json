@@ -1,0 +1,39 @@
+{
+  "term": "fire",
+  "seed_phrase": "to fire someone",
+  "instances": [
+    {
+      "context": "the manager fired her in front of the team",
+      "goal": "restore power balance",
+      "simulation": "Stub simulation for 'fire': a placeholder concept instance used in dry-run mode.",
+      "morphemes": [
+        "fire"
+      ],
+      "phonesthetics_note": "fi- cluster: forceful, abrupt action",
+      "seed_phrase": "to fire someone",
+      "grammatical_frame": "transitive verb, agent=manager, patient=employee",
+      "id": "813bbcd9-c089-43cc-a08d-289dd85a0976",
+      "adequacy_score": 7.88,
+      "human_signal": null,
+      "hint": null,
+      "round": 0,
+      "history": [
+        {
+          "round": 0,
+          "simulation": "Stub simulation for 'fire': a placeholder concept instance used in dry-run mode.",
+          "adequacy_score": 7.88
+        }
+      ]
+    }
+  ],
+  "goal_coverage": [
+    "restore power balance"
+  ],
+  "context_coverage": [
+    "the manager fired her in front of the team"
+  ],
+  "grammatical_frames": [
+    "transitive verb, agent=manager, patient=employee"
+  ],
+  "population_breadth": 1
+}
